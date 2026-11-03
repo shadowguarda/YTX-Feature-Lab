@@ -1273,6 +1273,15 @@ private fun GeneralModificationContent(context: Context) {
 
         HorizontalDivider(color = c.onSurface.copy(alpha = 0.08f))
 
+        SettingsSwitchRow(
+            title = "Ambient light",
+            subtitle = "The video's colours glow softly behind the player and fade into the page",
+            checked = AmbientSettings.enabled,
+            onCheckedChange = { AmbientSettings.updateEnabled(it) },
+        )
+
+        HorizontalDivider(color = c.onSurface.copy(alpha = 0.08f))
+
         Spacer(Modifier.height(8.dp))
         Text(
             text = "SponsorBlock",

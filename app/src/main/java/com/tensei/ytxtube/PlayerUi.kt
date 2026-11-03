@@ -231,6 +231,8 @@ fun PlayerScreen(
 
     val isDark = isDarkTheme()
     val isAmoled = ThemeSettings.mode == "amoled"
+    val ambientOn = AmbientSettings.enabled && !isAmoled && !state.isMusicMode
+    val ambientFrames = rememberAmbientFrames(active = ambientOn)
     val pageColor = if (isAmoled) Color.Black else c.surface
     val miniColor = when {
         isAmoled -> Color(0xFF000000)
@@ -264,6 +266,8 @@ fun PlayerScreen(
                 // AMOLED is meant to be pure black. The drifting status-bar/player glow
                 // is a normal-theme effect only; low-end devices skip it to keep playback smooth.
                 if (isAmoled || !GlassQuality.effectsSupported || state.isMusicMode || size.width < 10f || size.height < 10f) return@drawBehind
+                // The live video glow replaces the thumbnail-colour wash once frames are flowing.
+                if (ambientOn && ambientFrames.current != null) return@drawBehind
                 val topStrength = if (isAmoled) 0.40f else if (isDark) 0.35f else 0.22f
                 val bodyStrength = if (isAmoled) 0.30f else if (isDark) 0.26f else 0.16f
                 val aspect = state.stageAspect.coerceAtLeast(0.5f)
@@ -302,6 +306,12 @@ fun PlayerScreen(
             }
 
 
+            .drawBehind {
+                if (!ambientOn || ambientFrames.current == null) return@drawBehind
+                val reveal = ramp(morph.progress.value, 0.5f)
+                if (reveal <= 0f) return@drawBehind
+                drawAmbientGlow(ambientFrames, pageColor, strength = reveal * (if (isDark) 1f else 0.75f))
+            }
             .then(if (interactive) Modifier.pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } } else Modifier),
     ) {
         ActionMessage(state, Modifier.align(Alignment.BottomCenter).zIndex(1f).padding(bottom = bottom + 24.dp))

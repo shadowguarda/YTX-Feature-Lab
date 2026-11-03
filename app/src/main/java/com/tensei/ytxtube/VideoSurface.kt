@@ -39,6 +39,10 @@ object SharedVideoTexture {
     var version by mutableIntStateOf(0)
         private set
 
+    /** The TextureView currently showing the video, so ambient light can read frames off it. */
+    @Volatile
+    var view: java.lang.ref.WeakReference<TextureView>? = null
+
     fun adopt(view: TextureView, fresh: SurfaceTexture) {
         val kept = texture
         if (kept == null) {
@@ -63,6 +67,7 @@ fun VideoSurface(player: Player?, modifier: Modifier = Modifier) {
         modifier = modifier,
         factory = { context ->
             TextureView(context).apply {
+                SharedVideoTexture.view = java.lang.ref.WeakReference(this)
 
                 SharedVideoTexture.texture?.let { runCatching { setSurfaceTexture(it) } }
                 surfaceTextureListener = object : TextureView.SurfaceTextureListener {
@@ -74,6 +79,7 @@ fun VideoSurface(player: Player?, modifier: Modifier = Modifier) {
                 }
                 addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
                     override fun onViewAttachedToWindow(v: View) {
+                        SharedVideoTexture.view = java.lang.ref.WeakReference(this@apply)
 
                         val kept = SharedVideoTexture.texture ?: return
                         if (surfaceTexture !== kept) runCatching { setSurfaceTexture(kept) }
