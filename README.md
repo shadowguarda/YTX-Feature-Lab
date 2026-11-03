@@ -2,6 +2,8 @@
 
 A lightweight YouTube and YouTube Music client with a modern Liquid Glass UI, ad-free playback, endless personalised Shorts, synced Apple Music-style lyrics, and high-quality downloads.
 
+**Maintainer / developer:** [kairo-xy](https://github.com/Kairo-xy)
+
 ## Features
 
 - Live ambient light: the playing video's colours glow behind the player (toggle in Settings)
@@ -42,7 +44,11 @@ Version 2.2.0 · Android 7.0+ · one APK for phones, tablets and Android TV.
 
 ## Credits
 
-Fork of [Koustubh12345/YTXTube](https://github.com/Koustubh12345/YTXTube), which is based on [FlashTube](https://github.com/JustaThinker/FlashTube). Playback and extraction use [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor). The live ambient light adapts the approach of [MeeTube](https://github.com/yashoncode/meetube) (MIT); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+This project is maintained by [kairo-xy](https://github.com/Kairo-xy).
+
+YTXTube is a fork of [Koustubh12345/YTXTube](https://github.com/Koustubh12345/YTXTube), which is based on [FlashTube](https://github.com/JustaThinker/FlashTube). Playback and extraction use [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor). The live ambient light adapts the approach of [MeeTube](https://github.com/yashoncode/meetube) (MIT); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Feature research and planned improvements inspired by the wider open-source client ecosystem are tracked in [docs/FEATURE_RESEARCH.md](docs/FEATURE_RESEARCH.md). Inspiration does not imply code reuse; third-party code is only incorporated with license and attribution review.
 
 ## Build
 
