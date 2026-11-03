@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g. v0.1.0). Must already exist."
+        description: "Version tag to create or update (e.g. v0.1.0). Built from the selected branch."
         required: true
 
 permissions:
@@ -19,8 +19,6 @@ jobs:
       TAG: ${{ github.event.inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.TAG }}
 
       - uses: actions/setup-java@v4
         with:
@@ -78,5 +76,5 @@ jobs:
             gh release upload "$TAG" "$APK" "$APK.sha256" --clobber
           else
             gh release create "$TAG" "$APK" "$APK.sha256" \
-              --title "YTX Feature Lab ${TAG}" --notes "$(printf "$NOTES")" --verify-tag
+              --title "YTX Feature Lab ${TAG}" --notes "$(printf "$NOTES")" --target "$GITHUB_SHA"
           fi
