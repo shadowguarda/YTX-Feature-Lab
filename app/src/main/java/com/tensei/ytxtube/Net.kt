@@ -31,7 +31,13 @@ object Net {
     @Volatile private var mediaHost: String? = null
 
     fun noteMediaHost(url: String?) {
-        url?.toHttpUrlOrNull()?.host?.let { mediaHost = it }
+        url?.toHttpUrlOrNull()?.host?.let { host ->
+            val changed = mediaHost != host
+            mediaHost = host
+            // A freshly resolved stream usually lives on a new edge host: open the TCP/TLS
+            // connection now so the first media request skips the handshake.
+            if (changed) prewarmMediaConnection()
+        }
     }
 
     

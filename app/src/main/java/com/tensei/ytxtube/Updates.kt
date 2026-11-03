@@ -201,7 +201,7 @@ class UpdateState(private val scope: CoroutineScope) {
 
     private fun fetchLatest(): UpdateInfo? {
         val request = Request.Builder()
-            .url("https://api.github.com/repos/Koustubh12345/YTXTube/releases/latest")
+            .url("https://api.github.com/repos/shadowguarda/YTX-Feature-Lab/releases/latest")
             .header("Accept", "application/vnd.github+json")
             .header("User-Agent", "YTXTube/${BuildConfig.VERSION_NAME}")
             .build()

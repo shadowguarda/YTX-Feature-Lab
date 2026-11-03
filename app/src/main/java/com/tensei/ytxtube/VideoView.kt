@@ -77,6 +77,8 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PlayCircle
+import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.RepeatOne
 import androidx.compose.material.icons.rounded.Replay10
@@ -1225,6 +1227,27 @@ fun PlayerSettingsSheet(state: PlayerState, backdrop: Backdrop, onDismiss: () ->
                     title = "Loop video",
                     value = if (state.loopEnabled) "On" else "Off",
                     onClick = { state.toggleLoop() }
+                )
+
+
+                PlayerSettingItem(
+                    icon = Icons.Rounded.Bedtime,
+                    title = "Sleep timer",
+                    value = if (SleepTimer.minutes == 0) "Off" else "${SleepTimer.minutes} min",
+                    onClick = {
+                        val m = SleepTimer.cycle()
+                        state.actionMessage = if (m == 0) "Sleep timer off" else "Pausing in $m min"
+                    }
+                )
+
+
+                PlayerSettingItem(
+                    icon = Icons.Rounded.GraphicEq,
+                    title = "Skip silence",
+                    value = if (SkipSilence.enabled) "On" else "Off",
+                    onClick = {
+                        state.actionMessage = if (SkipSilence.toggle()) "Skip silence on" else "Skip silence off"
+                    }
                 )
 
 

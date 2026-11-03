@@ -120,6 +120,8 @@ class PlaybackService : MediaSessionService() {
             Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
+        PlayerBridge.exo = player
+        SkipSilence.applyTo(player)
         player.setVideoFrameMetadataListener { _, releaseTimeNs, _, _ -> AvSync.onFrameReleased(releaseTimeNs) }
         player.addListener(SponsorSkipper(player))
         player.addListener(SpeedKeeper(player))
@@ -152,6 +154,8 @@ class PlaybackService : MediaSessionService() {
     private var watchTime: WatchTimeReporter? = null
 
     override fun onDestroy() {
+        PlayerBridge.exo = null
+        SleepTimer.set(0)
         resumeSaver?.saveNow()
         watchTime?.finish()
         session?.run {

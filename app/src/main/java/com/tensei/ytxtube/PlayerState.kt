@@ -341,6 +341,11 @@ class PlayerState(private val scope: CoroutineScope) {
                     comments.load(item.id)
                     known[item.id] = d.item
                     d.related.forEach { known[it.id] = it }
+                    // Resolve the likely next-up streams while this one plays, so autoplay and a tap
+                    // on "up next" start without waiting on extraction.
+                    if (!isMusicMode) {
+                        StreamCache.prefetchAll(d.related.asSequence().filter { it.id != item.id }.take(2).map { it.id }.asIterable())
+                    }
                     if (!d.playable) error = "No playable stream was found for this video."
                     else if (startPlayback) startPlayback(d.item)
 

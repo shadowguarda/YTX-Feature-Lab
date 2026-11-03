@@ -260,7 +260,7 @@ fun SettingsScreen(
                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                         }
                     }
-                    val ytxRepo = "https://github.com/Koustubh12345/YTXTube"
+                    val ytxRepo = "https://github.com/shadowguarda/YTX-Feature-Lab"
                     SettingsRow(
                         icon = Icons.Rounded.Code,
                         title = "Open Source",
