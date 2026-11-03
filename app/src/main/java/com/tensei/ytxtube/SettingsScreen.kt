@@ -69,6 +69,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.DataUsage
 import androidx.compose.material.icons.rounded.Delete
@@ -1239,6 +1240,8 @@ private fun GeneralModificationContent(context: Context) {
     var showVideoQualityDialog by remember { mutableStateOf(false) }
     var showShortsQualityDialog by remember { mutableStateOf(false) }
     var showFolderDialog by remember { mutableStateOf(false) }
+    var showKeywordDialog by remember { mutableStateOf(false) }
+    var showChannelDialog by remember { mutableStateOf(false) }
 
     val folderPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -1279,6 +1282,48 @@ private fun GeneralModificationContent(context: Context) {
             checked = AmbientSettings.enabled,
             onCheckedChange = { AmbientSettings.updateEnabled(it) },
         )
+
+        HorizontalDivider(color = c.onSurface.copy(alpha = 0.08f))
+
+        SettingsSwitchRow(
+            title = "DeArrow titles",
+            subtitle = "Swap clickbait titles for community ones. Only a short hash of each video ID is sent.",
+            checked = DeArrow.enabled,
+            onCheckedChange = { DeArrow.updateEnabled(it) },
+        )
+
+        HorizontalDivider(color = c.onSurface.copy(alpha = 0.08f))
+
+        SettingsRow(
+            icon = Icons.Rounded.Block,
+            title = "Blocked keywords",
+            subtitle = if (ContentFilters.keywords.isEmpty()) "Hide videos with these words in the title" else ContentFilters.keywords.joinToString(", "),
+            onClick = { showKeywordDialog = true },
+        )
+        SettingsRow(
+            icon = Icons.Rounded.Block,
+            title = "Blocked channels",
+            subtitle = if (ContentFilters.channels.isEmpty()) "Hide every video from these channels" else ContentFilters.channels.joinToString(", "),
+            onClick = { showChannelDialog = true },
+        )
+        if (showKeywordDialog) {
+            FilterListDialog(
+                title = "Blocked keywords",
+                hint = "Separate with commas. Applies the next time a feed loads.",
+                initial = ContentFilters.keywords,
+                onSave = ContentFilters::setKeywords,
+                onDismiss = { showKeywordDialog = false },
+            )
+        }
+        if (showChannelDialog) {
+            FilterListDialog(
+                title = "Blocked channels",
+                hint = "Channel names, separated by commas. Applies the next time a feed loads.",
+                initial = ContentFilters.channels,
+                onSave = ContentFilters::setChannels,
+                onDismiss = { showChannelDialog = false },
+            )
+        }
 
         HorizontalDivider(color = c.onSurface.copy(alpha = 0.08f))
 

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Check
@@ -85,6 +86,11 @@ fun VideoOptionsSheet(video: VideoItem, player: PlayerState, onDismiss: () -> Un
         OptionRow(Icons.Rounded.Download, "Download") { player.downloadFor = video; onDismiss() }
         if (Account.signedIn) {
             OptionRow(Icons.Rounded.WatchLater, "Save to Watch later") { player.saveToWatchLater(video); onDismiss() }
+        }
+        OptionRow(Icons.Rounded.Block, "Hide this channel") {
+            ContentFilters.blockChannel(video.channel)
+            player.actionMessage = "Hiding ${video.channel} from feeds"
+            onDismiss()
         }
         OptionRow(Icons.Rounded.Share, "Share") {
             val send = Intent(Intent.ACTION_SEND).setType("text/plain")

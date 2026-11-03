@@ -379,7 +379,7 @@ fun VideoCard(video: VideoItem, onClick: () -> Unit, modifier: Modifier = Modifi
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    video.title,
+                    rememberDeArrowTitle(video.id, video.title),
                     fontWeight = FontWeight.Normal,
                     fontSize = 15.sp,
                     lineHeight = 20.sp,
@@ -432,7 +432,7 @@ fun VideoRow(video: VideoItem, onClick: () -> Unit, trailing: (@Composable () ->
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(video.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(rememberDeArrowTitle(video.id, video.title), fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(4.dp))
             val viewsLabel = if (video.isLive) {
                 video.views.takeIf { it >= 0 }?.let { "${formatCount(it)} watching" } ?: "Live"

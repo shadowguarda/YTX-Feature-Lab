@@ -89,7 +89,7 @@ class FeedState(
         job = scope.launch {
             runCatching { if (freshOnRefresh && shown.isNotEmpty()) loadFresh() else loader(null) }
                 .onSuccess {
-                    videos = it.videos
+                    videos = ContentFilters.filter(it.videos)
                     next = it.next
                     generation++
                     // Resolve the first few streams now so the tap that follows starts playing at once.
@@ -110,7 +110,7 @@ class FeedState(
             runCatching { loader(token) }
                 .onSuccess { page ->
                     val seen = videos.mapTo(HashSet()) { it.id }
-                    val added = page.videos.filter { seen.add(it.id) }
+                    val added = ContentFilters.filter(page.videos).filter { seen.add(it.id) }
                     videos = videos + added
                     if (freshOnRefresh) added.forEach { v -> shown += v.id }
                     next = page.next

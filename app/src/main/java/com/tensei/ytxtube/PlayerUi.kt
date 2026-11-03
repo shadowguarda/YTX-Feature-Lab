@@ -367,7 +367,7 @@ fun PlayerScreen(
                     Column(Modifier.padding(horizontal = 20.dp)) {
                         Spacer(Modifier.height(18.dp))
                         Text(
-                            item.title,
+                            rememberDeArrowTitle(item.id, item.title),
                             fontFamily = RoundedHeavy,
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 18.sp,
@@ -899,7 +899,7 @@ private fun RowScope.MiniDetails(state: PlayerState, interactive: Boolean) {
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    item.title,
+                    rememberDeArrowTitle(item.id, item.title),
                     fontSize = 13.5.sp,
                     lineHeight = 17.sp,
                     fontWeight = FontWeight.Bold,

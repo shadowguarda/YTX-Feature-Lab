@@ -708,7 +708,7 @@ private fun HistoryCard(video: VideoItem, onClick: () -> Unit) {
             DurationPill(video.durationSec, Modifier.align(Alignment.BottomEnd).padding(6.dp), small = true)
         }
         Spacer(Modifier.height(7.dp))
-        Text(video.title, fontSize = 13.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(rememberDeArrowTitle(video.id, video.title), fontSize = 13.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 

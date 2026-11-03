@@ -23,6 +23,8 @@ class YTXTubeApplication : Application(), ImageLoaderFactory {
         GlassQuality.init(this)
         GlassSettings.init(this)
         AmbientSettings.init(this)
+        DeArrow.init(this)
+        ContentFilters.init(this)
         SkipSilence.init(this)
         NetworkSpeed.init(this)
         PlaybackBandwidth.init(this)
