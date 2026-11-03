@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.1.0). Must already exist."
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          SECRET_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SECRET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SECRET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          KS="$RUNNER_TEMP/release.jks"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Using repository signing key."
+            echo "$KEYSTORE_BASE64" | base64 -d > "$KS"
+            STORE_PASS="$SECRET_STORE_PASSWORD"; ALIAS="$SECRET_KEY_ALIAS"; KEY_PASS="$SECRET_KEY_PASSWORD"
+          else
+            echo "No signing secrets configured: generating a one-off key for this build."
+            STORE_PASS="$(openssl rand -hex 12)"; KEY_PASS="$STORE_PASS"; ALIAS="ytxfeaturelab"
+            keytool -genkeypair -keystore "$KS" -alias "$ALIAS" -keyalg RSA -keysize 2048 \
+              -validity 10000 -storepass "$STORE_PASS" -keypass "$KEY_PASS" \
+              -dname "CN=YTX Feature Lab, O=shadowguarda"
+          fi
+          echo "::add-mask::$STORE_PASS"
+          {
+            echo "KEYSTORE_PATH=$KS"
+            echo "KEYSTORE_PASSWORD=$STORE_PASS"
+            echo "KEY_ALIAS=$ALIAS"
+            echo "KEY_PASSWORD=$KEY_PASS"
+          } >> "$GITHUB_ENV"
+
+      - name: Build signed release APK
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Verify signature and name artifact
+        run: |
+          APK_SRC="$(ls app/build/outputs/apk/release/*.apk | head -1)"
+          APK="YTX-Feature-Lab-${TAG}.apk"
+          cp "$APK_SRC" "$APK"
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          "$BT/apksigner" verify --print-certs "$APK"
+          sha256sum "$APK" | tee "$APK.sha256"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK="YTX-Feature-Lab-${TAG}.apk"
+          NOTES="Signed release build of YTX Feature Lab ${TAG}.\n\nSHA-256:\n\`$(cat "$APK.sha256")\`"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" "$APK.sha256" --clobber
+          else
+            gh release create "$TAG" "$APK" "$APK.sha256" \
+              --title "YTX Feature Lab ${TAG}" --notes "$(printf "$NOTES")" --verify-tag
+          fi
