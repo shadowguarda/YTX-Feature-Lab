@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - uses: gradle/actions/setup-gradle@v4
 
@@ -44,7 +44,7 @@ jobs:
             STORE_PASS="$(openssl rand -hex 12)"; KEY_PASS="$STORE_PASS"; ALIAS="ytxfeaturelab"
             keytool -genkeypair -keystore "$KS" -alias "$ALIAS" -keyalg RSA -keysize 2048 \
               -validity 10000 -storepass "$STORE_PASS" -keypass "$KEY_PASS" \
-              -dname "CN=YTX Feature Lab, O=shadowguarda"
+              -dname "CN=YTXTube, O=shadowguarda"
           fi
           echo "::add-mask::$STORE_PASS"
           {
@@ -55,12 +55,12 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Build signed release APK
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew :app:assembleRelease --stacktrace
 
       - name: Verify signature and name artifact
         run: |
           APK_SRC="$(ls app/build/outputs/apk/release/*.apk | head -1)"
-          APK="YTX-Feature-Lab-${TAG}.apk"
+          APK="YTXTube-${TAG}.apk"
           cp "$APK_SRC" "$APK"
           BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
           "$BT/apksigner" verify --print-certs "$APK"
@@ -70,11 +70,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          APK="YTX-Feature-Lab-${TAG}.apk"
-          NOTES="Signed release build of YTX Feature Lab ${TAG}.\n\nSHA-256:\n\`$(cat "$APK.sha256")\`"
+          APK="YTXTube-${TAG}.apk"
+          NOTES="Signed release build of YTXTube ${TAG}.\n\nSHA-256:\n\`$(cat "$APK.sha256")\`"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" "$APK.sha256" --clobber
           else
             gh release create "$TAG" "$APK" "$APK.sha256" \
-              --title "YTX Feature Lab ${TAG}" --notes "$(printf "$NOTES")" --target "$GITHUB_SHA"
+              --title "YTXTube ${TAG}" --notes "$(printf "$NOTES")" --target "$GITHUB_SHA"
           fi

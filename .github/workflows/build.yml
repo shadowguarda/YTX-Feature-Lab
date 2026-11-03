@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  assemble-debug:
+  assemble-release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,14 +15,14 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Build release APK
+        run: ./gradlew :app:assembleRelease --stacktrace
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ytx-feature-lab-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: ytxtube-release-apk
+          path: app/build/outputs/apk/release/*.apk
