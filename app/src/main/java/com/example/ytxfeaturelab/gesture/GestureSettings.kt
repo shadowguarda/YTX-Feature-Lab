@@ -90,12 +90,12 @@ object GestureSettings {
         prefs?.edit()?.putFloat(K_SENS, value)?.apply()
     }
 
-    fun setEdgeFraction(value: Float) {
+    fun updateEdgeFraction(value: Float) {
         edgeFraction = value
         prefs?.edit()?.putFloat(K_EDGE, value)?.apply()
     }
 
-    fun setSwapEdges(value: Boolean) {
+    fun updateSwapEdges(value: Boolean) {
         swapEdges = value
         prefs?.edit()?.putBoolean(K_SWAP, value)?.apply()
     }
@@ -171,7 +171,7 @@ fun GestureSettingsSheet(onDismiss: () -> Unit) {
             )
             Slider(
                 value = GestureSettings.edgeFraction,
-                onValueChange = { GestureSettings.setEdgeFraction(it) },
+                onValueChange = { GestureSettings.updateEdgeFraction(it) },
                 valueRange = 0.12f..0.35f,
             )
 
@@ -187,7 +187,7 @@ fun GestureSettingsSheet(onDismiss: () -> Unit) {
                 }
                 Switch(
                     checked = GestureSettings.swapEdges,
-                    onCheckedChange = { GestureSettings.setSwapEdges(it) },
+                    onCheckedChange = { GestureSettings.updateSwapEdges(it) },
                     colors = SwitchDefaults.colors(
                         checkedTrackColor = c.primary,
                         checkedThumbColor = c.onPrimary,
