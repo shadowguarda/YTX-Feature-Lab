@@ -4,11 +4,16 @@ plugins {
 }
 
 android {
+    // Kotlin/Java package of the source code and R class. Keep this unchanged.
     namespace = "com.tensei.ytxtube"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.tensei.ytxtube"
+        // The install identity of the app. It differs from the upstream YTXTube
+        // ("com.tensei.ytxtube") so this fork installs next to it instead of failing with a
+        // package conflict (which also happens when the signing key differs). The two apps
+        // keep separate data, settings and downloads.
+        applicationId = "com.kairoxy.ytxlab"
         minSdk = 24
         targetSdk = 36
         versionCode = 220
