@@ -20,8 +20,20 @@ import kotlinx.coroutines.launch
  * sees through a MediaController. Always touch the player from the main thread.
  */
 object PlayerBridge {
+    /**
+     * Set by PlaybackService on the main thread. Replacing the player also moves the network
+     * recovery listener (see PlaybackRecovery) so it always follows the live player.
+     */
     @Volatile
     var exo: ExoPlayer? = null
+        set(value) {
+            val old = field
+            field = value
+            if (old !== value) {
+                PlaybackRecovery.detach(old)
+                PlaybackRecovery.attach(value)
+            }
+        }
 }
 
 /** Trims silent stretches out of audio, handy for podcasts, lectures and talk-heavy videos. */
