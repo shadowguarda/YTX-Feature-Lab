@@ -22,7 +22,8 @@ import kotlinx.coroutines.launch
 object PlayerBridge {
     /**
      * Set by PlaybackService on the main thread. Replacing the player also moves the network
-     * recovery listener (see PlaybackRecovery) so it always follows the live player.
+     * recovery listener (see PlaybackRecovery) and the stats listener (see PlayerStats) so they
+     * always follow the live player.
      */
     @Volatile
     var exo: ExoPlayer? = null
@@ -31,7 +32,9 @@ object PlayerBridge {
             field = value
             if (old !== value) {
                 PlaybackRecovery.detach(old)
+                PlayerStats.detach(old)
                 PlaybackRecovery.attach(value)
+                PlayerStats.attach(value)
             }
         }
 }
