@@ -22,6 +22,11 @@ import kotlinx.coroutines.launch
 object PlayerBridge {
     @Volatile
     var exo: ExoPlayer? = null
+        set(value) {
+            field = value
+            // Audio effects hook onto the player's audio session, so they follow the live player.
+            AudioEffects.attach(value)
+        }
 }
 
 /** Trims silent stretches out of audio, handy for podcasts, lectures and talk-heavy videos. */

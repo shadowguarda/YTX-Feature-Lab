@@ -78,6 +78,7 @@ import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.RepeatOne
@@ -1237,6 +1238,28 @@ fun PlayerSettingsSheet(state: PlayerState, backdrop: Backdrop, onDismiss: () ->
                     onClick = {
                         val m = SleepTimer.cycle()
                         state.actionMessage = if (m == 0) "Sleep timer off" else "Pausing in $m min"
+                    }
+                )
+
+
+                PlayerSettingItem(
+                    icon = Icons.Rounded.Equalizer,
+                    title = "Equalizer",
+                    value = AudioEffects.preset.label,
+                    onClick = {
+                        state.actionMessage = "Equalizer: ${AudioEffects.cyclePreset().label}"
+                    }
+                )
+
+
+                PlayerSettingItem(
+                    icon = Icons.AutoMirrored.Rounded.VolumeUp,
+                    title = "Loudness boost",
+                    value = AudioEffects.boostSteps[AudioEffects.boostIndex].let { if (it == 0) "Off" else "+${it / 100} dB" },
+                    onClick = {
+                        AudioEffects.cycleBoost()
+                        val mb = AudioEffects.boostSteps[AudioEffects.boostIndex]
+                        state.actionMessage = if (mb == 0) "Loudness boost off" else "Loudness +${mb / 100} dB"
                     }
                 )
 

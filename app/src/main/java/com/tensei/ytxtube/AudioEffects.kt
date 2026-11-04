@@ -72,11 +72,11 @@ object AudioEffects {
     /** Steps to the next preset and returns it. */
     fun cyclePreset(): Preset {
         val all = Preset.entries
-        setPreset(all[(preset.ordinal + 1) % all.size])
+        updatePreset(all[(preset.ordinal + 1) % all.size])
         return preset
     }
 
-    fun setPreset(value: Preset) {
+    fun updatePreset(value: Preset) {
         preset = value
         prefs?.edit()?.putInt(KEY_PRESET, value.ordinal)?.apply()
         applyEqualizer()
