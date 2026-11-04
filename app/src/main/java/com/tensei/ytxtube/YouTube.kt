@@ -106,6 +106,8 @@ data class VideoDetails(
     val hdrQualities: List<Int> = emptyList(),
 
     val aspect: Float? = null,
+
+    val chapters: List<Chapter> = emptyList(),
 )
 
 @Immutable
@@ -267,6 +269,10 @@ object YouTube {
             hdrQualities = StreamSelection.hdrHeights(info),
             aspect = (if (picked.usesSeparate) picked.video else picked.muxed)
                 ?.takeIf { it.width > 0 && it.height > 0 }?.let { it.width.toFloat() / it.height },
+            chapters = info.streamSegments.orEmpty().mapNotNull { s ->
+                val t = s.title?.trim().orEmpty()
+                if (t.isEmpty()) null else Chapter(t, s.startTimeSeconds * 1000L)
+            }.sortedBy { it.startMs },
         )
     }
 

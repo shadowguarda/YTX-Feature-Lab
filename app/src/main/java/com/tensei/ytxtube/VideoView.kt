@@ -55,6 +55,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.FormatListBulleted
 import androidx.compose.material.icons.automirrored.rounded.VolumeMute
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.AspectRatio
@@ -743,6 +744,7 @@ fun VideoContent(
             }
             Scrubber(
                 segments = segments,
+                chapters = state.details?.chapters.orEmpty(),
                 positionMs = state.positionMs,
                 bufferedMs = state.bufferedMs,
                 durationMs = state.durationMs,
@@ -852,6 +854,7 @@ fun AudioOnlyStage(
             var scrubPreview by remember { mutableStateOf<Long?>(null) }
             Scrubber(
                 segments = if (SponsorBlock.enabled) state.segments.filter { it.action != SponsorBlock.Action.Off } else emptyList(),
+                chapters = state.details?.chapters.orEmpty(),
                 positionMs = state.positionMs,
                 bufferedMs = state.bufferedMs,
                 durationMs = state.durationMs,
@@ -1221,6 +1224,19 @@ fun PlayerSettingsSheet(state: PlayerState, backdrop: Backdrop, onDismiss: () ->
                         state.sheet = PlayerSheet.Subtitles
                     }
                 )
+
+
+                state.details?.chapters?.takeIf { it.size >= 2 }?.let { chapters ->
+                    PlayerSettingItem(
+                        icon = Icons.AutoMirrored.Rounded.FormatListBulleted,
+                        title = "Chapters",
+                        value = "${chapters.size} chapters",
+                        onClick = {
+                            onDismiss()
+                            state.sheet = PlayerSheet.Chapters
+                        }
+                    )
+                }
 
 
                 PlayerSettingItem(
@@ -1597,6 +1613,7 @@ private val FullscreenScrubKnobDragging = 6.dp
 @Composable
 private fun Scrubber(
     segments: List<SponsorBlock.Segment>,
+    chapters: List<Chapter> = emptyList(),
     positionMs: Long,
     bufferedMs: Long,
     durationMs: Long,
@@ -1702,6 +1719,12 @@ private fun Scrubber(
             val x0 = left + trackW * (seg.startMs.toFloat() / duration).coerceIn(0f, 1f)
             val x1 = left + trackW * (seg.endMs.toFloat() / duration).coerceIn(0f, 1f)
             if (x1 > x0) drawRoundRect(seg.category.color, Offset(x0, y), Size(x1 - x0, trackH), r)
+        }
+        // Chapter boundaries: thin gaps in the track, like the official app.
+        chapters.forEach { chapter ->
+            if (chapter.startMs <= 0L) return@forEach
+            val x = left + trackW * (chapter.startMs.toFloat() / duration).coerceIn(0f, 1f)
+            drawRect(Color.Black.copy(alpha = 0.55f), Offset(x - 1.dp.toPx(), y), Size(2.dp.toPx(), trackH))
         }
         if (chromeActive) {
             val knobR = knobRadius.toPx()

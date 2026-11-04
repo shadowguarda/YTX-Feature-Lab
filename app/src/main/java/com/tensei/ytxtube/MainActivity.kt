@@ -859,6 +859,7 @@ fun YtxTubeApp() {
             PlayerSheet.Settings -> Unit
             PlayerSheet.Comments -> Unit
             PlayerSheet.Queue -> QueueSheet(player, onDismiss = { player.sheet = null })
+            PlayerSheet.Chapters -> ChaptersSheet(player, onDismiss = { player.sheet = null })
             PlayerSheet.Speed -> Unit
             PlayerSheet.Audio -> Unit
             null -> Unit
