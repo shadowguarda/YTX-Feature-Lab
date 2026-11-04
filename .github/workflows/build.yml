@@ -2,13 +2,16 @@ name: Build
 
 on:
   push:
-    branches: [main, "kairo-xy/**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -20,13 +23,37 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Run unit tests
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest --stacktrace 2>&1 | tee test.log
+
+      - name: Report test failures on the PR
+        if: failure() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '### Unit test failure details'
+            echo
+            echo 'Key lines from the log:'
+            echo '```'
+            grep -E "^e: |FAILED|AssertionError|Exception|What went wrong|Execution failed" test.log | head -n 40
+            echo '```'
+            echo 'Last lines of the log:'
+            echo '```'
+            tail -n 40 test.log
+            echo '```'
+          } | head -c 60000 > comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file comment.md
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: unit-test-reports
           path: app/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: ignore
 
   assemble-release:
     runs-on: ubuntu-latest
