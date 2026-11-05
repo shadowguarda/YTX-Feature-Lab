@@ -61,7 +61,8 @@ class SearchFiltersTest {
 
     @Test
     fun durationFilterHidesLiveStreams() {
-        assertEquals(listOf("medium"), run(items, SearchFilter(duration = DurationFilter.From4To20)))
+        // "nodate" is 300 s long, inside the 4-20 min bucket, so it stays; the live stream is hidden.
+        assertEquals(listOf("medium", "nodate"), run(items, SearchFilter(duration = DurationFilter.From4To20)))
     }
 
     @Test

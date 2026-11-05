@@ -26,6 +26,7 @@ class YTXTubeApplication : Application(), ImageLoaderFactory {
         DeArrow.init(this)
         ContentFilters.init(this)
         SkipSilence.init(this)
+        AudioEffects.init(this)
         NetworkSpeed.init(this)
         PlaybackBandwidth.init(this)
         NewPipe.init(NewPipeDownloader.instance)
