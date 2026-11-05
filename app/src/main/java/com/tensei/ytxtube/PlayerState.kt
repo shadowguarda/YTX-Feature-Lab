@@ -1147,6 +1147,6 @@ fun rememberPlayerState(): PlayerState {
     return state
 }
 
-enum class PlayerSheet { Quality, Comments, Queue, Settings, Speed, Audio, Subtitles }
+enum class PlayerSheet { Quality, Comments, Queue, Settings, Speed, Audio, Subtitles, Chapters }
 
 private const val TAG = "YTXTube"
