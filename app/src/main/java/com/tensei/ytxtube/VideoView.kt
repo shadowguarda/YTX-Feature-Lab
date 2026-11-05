@@ -524,6 +524,7 @@ fun VideoContent(
         gestureHud?.let { (icon, info) ->
             GestureHUD(icon = icon, label = info.first, percent = info.second, modifier = Modifier.align(Alignment.TopCenter).padding(top = 18.dp))
         }
+        StatsHud(Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp).zIndex(20f), fullscreen = fullscreen)
 
         val error = state.error
         if (error != null) {
@@ -1261,21 +1262,23 @@ fun PlayerSettingsSheet(state: PlayerState, backdrop: Backdrop, onDismiss: () ->
                 PlayerSettingItem(
                     icon = Icons.Rounded.Equalizer,
                     title = "Equalizer",
-                    value = AudioEffects.preset.label,
+                    value = AudioEffects.boostSteps[AudioEffects.boostIndex].let { mb ->
+                        if (mb == 0) AudioEffects.preset.label else "${AudioEffects.preset.label} · +${mb / 100} dB"
+                    },
                     onClick = {
-                        state.actionMessage = "Equalizer: ${AudioEffects.cyclePreset().label}"
+                        onDismiss()
+                        state.sheet = PlayerSheet.Equalizer
                     }
                 )
 
 
                 PlayerSettingItem(
-                    icon = Icons.AutoMirrored.Rounded.VolumeUp,
-                    title = "Loudness boost",
-                    value = AudioEffects.boostSteps[AudioEffects.boostIndex].let { if (it == 0) "Off" else "+${it / 100} dB" },
+                    icon = Icons.Rounded.Info,
+                    title = "Stats for nerds",
+                    value = if (PlayerStats.visible) "On" else "Off",
                     onClick = {
-                        AudioEffects.cycleBoost()
-                        val mb = AudioEffects.boostSteps[AudioEffects.boostIndex]
-                        state.actionMessage = if (mb == 0) "Loudness boost off" else "Loudness +${mb / 100} dB"
+                        PlayerStats.toggle()
+                        onDismiss()
                     }
                 )
 

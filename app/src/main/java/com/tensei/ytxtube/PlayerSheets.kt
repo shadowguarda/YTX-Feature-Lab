@@ -52,6 +52,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import kotlinx.coroutines.launch
 import com.kyant.backdrop.Backdrop
 import kotlin.math.abs
 
@@ -422,5 +436,110 @@ private fun PlayerGlassSheet(
                 content = content,
             )
         }
+    }
+}
+
+
+private val EqHz = List(28) { (30.0 * Math.pow(16_000.0 / 30.0, it / 27.0)).toInt() }
+private val EqLabelHz = listOf(60, 250, 1_000, 4_000, 16_000)
+
+private fun eqLabel(hz: Int) = if (hz >= 1_000) "${hz / 1_000}k" else "$hz"
+
+/**
+ * Equalizer and loudness boost. The curve is the response the chosen preset applies across the
+ * audible range, and it glides from one preset's shape to the next when you switch.
+ */
+@Composable
+fun EqualizerSheet(backdrop: Backdrop, onDismiss: () -> Unit) {
+    val c = MaterialTheme.colorScheme
+    val preset = AudioEffects.preset
+    val gains = remember { List(EqHz.size) { Animatable(0f) } }
+    LaunchedEffect(preset) {
+        EqHz.forEachIndexed { i, hz ->
+            val target = AudioEffects.previewGainMb(preset, hz) / 100f
+            launch { gains[i].animateTo(target, spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessLow)) }
+        }
+    }
+
+    PlayerGlassSheet("Equalizer", backdrop, onDismiss) {
+        val measurer = rememberTextMeasurer()
+        val labelColor = c.onSurfaceVariant
+        val accent = c.primary
+        val grid = c.onSurface.copy(alpha = 0.12f)
+        Canvas(Modifier.fillMaxWidth().height(150.dp).padding(top = 4.dp)) {
+            val labelH = 18.dp.toPx()
+            val plotH = size.height - labelH
+            val mid = plotH / 2f
+            val span = 8f // dB shown above and below the centre line
+            fun x(i: Int) = size.width * i / (EqHz.size - 1)
+            fun y(db: Float) = mid - (db / span) * (mid - 6.dp.toPx())
+
+            listOf(-6f, 0f, 6f).forEach { db ->
+                drawLine(grid, Offset(0f, y(db)), Offset(size.width, y(db)), strokeWidth = 1.dp.toPx())
+            }
+            val line = Path()
+            val fill = Path()
+            gains.forEachIndexed { i, gain ->
+                val px = x(i)
+                val py = y(gain.value)
+                if (i == 0) {
+                    line.moveTo(px, py)
+                    fill.moveTo(px, plotH)
+                    fill.lineTo(px, py)
+                } else {
+                    val prevX = x(i - 1)
+                    val prevY = y(gains[i - 1].value)
+                    val m = (prevX + px) / 2f
+                    line.cubicTo(m, prevY, m, py, px, py)
+                    fill.cubicTo(m, prevY, m, py, px, py)
+                }
+            }
+            fill.lineTo(size.width, plotH)
+            fill.close()
+            drawPath(fill, Brush.verticalGradient(listOf(accent.copy(alpha = 0.40f), Color.Transparent), startY = 0f, endY = plotH))
+            drawPath(line, accent, style = Stroke(width = 2.6.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+
+            EqLabelHz.forEach { hz ->
+                val frac = (Math.log(hz / 30.0) / Math.log(16_000.0 / 30.0)).toFloat()
+                val layout = measurer.measure(
+                    eqLabel(hz),
+                    TextStyle(fontSize = 10.sp, color = labelColor, fontWeight = FontWeight.Medium),
+                )
+                val lx = (size.width * frac - layout.size.width / 2f).coerceIn(0f, size.width - layout.size.width)
+                drawText(layout, topLeft = Offset(lx, plotH + 2.dp.toPx()))
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+        AudioEffects.Preset.entries.chunked(3).forEach { rowPresets ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                rowPresets.forEach { p ->
+                    SpeedChip(label = p.label, selected = p == preset, modifier = Modifier.weight(1f)) {
+                        AudioEffects.updatePreset(p)
+                    }
+                }
+                repeat(3 - rowPresets.size) { Spacer(Modifier.weight(1f)) }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+
+        Spacer(Modifier.height(6.dp))
+        Text("Loudness boost", fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            AudioEffects.boostSteps.forEachIndexed { i, mb ->
+                SpeedChip(
+                    label = if (mb == 0) "Off" else "+${mb / 100} dB",
+                    selected = i == AudioEffects.boostIndex,
+                    modifier = Modifier.weight(1f),
+                ) { AudioEffects.setBoost(i) }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "Applies to videos and music in the main player. Shorts keep their own audio.",
+            color = c.onSurfaceVariant, fontSize = 11.5.sp,
+        )
+        Spacer(Modifier.height(4.dp))
     }
 }

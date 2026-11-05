@@ -150,6 +150,9 @@ object AudioEffects {
         }
     }
 
+    /** Gain in millibels a preset applies at [hz]; used to draw the equalizer curve. */
+    fun previewGainMb(preset: Preset, hz: Int): Int = curve(preset, hz)
+
     /** Gain in millibels for a preset at a given frequency. */
     private fun curve(preset: Preset, hz: Int): Int = when (preset) {
         Preset.Flat -> 0
