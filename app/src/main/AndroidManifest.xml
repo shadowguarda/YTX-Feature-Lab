@@ -89,6 +89,18 @@
             </intent-filter>
         </activity>
 
+        <!-- YTX Lab: the extra features of this fork, with its own launcher icon. -->
+        <activity
+            android:name=".LabActivity"
+            android:exported="true"
+            android:label="YTX Lab"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".PlaybackService"
             android:exported="true"

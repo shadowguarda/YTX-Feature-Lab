@@ -21,9 +21,9 @@ import kotlinx.coroutines.launch
  */
 object PlayerBridge {
     /**
-     * Set by PlaybackService on the main thread. Replacing the player also moves the network
-     * recovery listener (see PlaybackRecovery), the stats listener (see PlayerStats) and the audio
-     * effects (see AudioEffects) so they always follow the live player.
+     * Set by PlaybackService on the main thread. Replacing the player also moves the listeners that
+     * follow the live player: network recovery (PlaybackRecovery), stats (PlayerStats) and audio
+     * effects (AudioEffects).
      */
     @Volatile
     var exo: ExoPlayer? = null
@@ -33,9 +33,9 @@ object PlayerBridge {
             if (old !== value) {
                 PlaybackRecovery.detach(old)
                 PlayerStats.detach(old)
+                AudioEffects.detach(old)
                 PlaybackRecovery.attach(value)
                 PlayerStats.attach(value)
-                // Audio effects hook onto the player's audio session; attach(null) releases them.
                 AudioEffects.attach(value)
             }
         }

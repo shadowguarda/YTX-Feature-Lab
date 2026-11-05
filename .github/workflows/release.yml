@@ -3,8 +3,8 @@ name: Release
 on:
   push:
     tags: ["v*"]
-    # Every push to a kairo-xy/* branch publishes a pre-release APK tagged v2.2.1-lab.<run number>.
-    branches: ["kairo-xy/**"]
+    # Every merge or push to main publishes a full (non pre-release) "latest" release.
+    branches: [main]
   workflow_dispatch:
     inputs:
       tag:
@@ -74,10 +74,15 @@ jobs:
         run: |
           APK="YTXTube-${TAG}.apk"
           NOTES="Signed release build of YTXTube ${TAG}.\n\nSHA-256:\n\`$(cat "$APK.sha256")\`"
-          FLAGS=""
-          case "$GITHUB_REF" in refs/heads/*) FLAGS="--prerelease" ;; esac
+          # Builds from main or a version tag are full releases marked Latest.
+          # Anything else (a manual run on another branch) is a pre-release.
+          case "$GITHUB_REF" in
+            refs/heads/main|refs/tags/*) FLAGS="--latest" ;;
+            *) FLAGS="--prerelease" ;;
+          esac
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" "$APK.sha256" --clobber
+            gh release edit "$TAG" $FLAGS
           else
             gh release create "$TAG" "$APK" "$APK.sha256" $FLAGS \
               --title "YTXTube ${TAG}" --notes "$(printf "$NOTES")" --target "$GITHUB_SHA"

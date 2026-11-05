@@ -14,9 +14,10 @@ import androidx.media3.exoplayer.ExoPlayer
 /**
  * System-level audio effects for every video and song: a preset equalizer and a loudness boost.
  *
- * Effects hook onto the player's audio session, so they follow the player automatically
- * (see [PlayerBridge.exo]). Every call is wrapped in try/catch because some devices do not
- * ship the effect or throw when a session is torn down.
+ * Effects hook onto the player's audio session and follow the player automatically (see
+ * [PlayerBridge.exo]). They are only created while a preset or boost is switched on, so with the
+ * default settings this object costs nothing. Every call is wrapped in try/catch because some
+ * devices do not ship the effect or throw when a session is torn down.
  */
 object AudioEffects {
     enum class Preset(val label: String) {
@@ -38,6 +39,7 @@ object AudioEffects {
     private var equalizer: Equalizer? = null
     private var loudness: LoudnessEnhancer? = null
     private var attachedTo: ExoPlayer? = null
+    private var sessionId = 0
 
     private val sessionListener = object : Player.Listener {
         override fun onAudioSessionIdChanged(audioSessionId: Int) {
@@ -57,56 +59,57 @@ object AudioEffects {
         boostIndex = p.getInt(KEY_BOOST, 0).coerceIn(0, boostSteps.lastIndex)
     }
 
-    /** Called by [PlayerBridge] whenever the live player changes. */
+    /** Called by [PlayerBridge] when the live player is created. */
     fun attach(player: ExoPlayer?) {
-        attachedTo?.removeListener(sessionListener)
+        if (player == null) return
         attachedTo = player
-        if (player == null) {
-            release()
-            return
-        }
         player.addListener(sessionListener)
         rebuild(player.audioSessionId)
     }
 
-    /** Steps to the next preset and returns it. */
-    fun cyclePreset(): Preset {
-        val all = Preset.entries
-        updatePreset(all[(preset.ordinal + 1) % all.size])
-        return preset
+    /** Called by [PlayerBridge] when the live player is replaced or released. */
+    fun detach(player: ExoPlayer?) {
+        player?.removeListener(sessionListener)
+        if (player == null || player === attachedTo) {
+            attachedTo = null
+            sessionId = 0
+            release()
+        }
     }
 
-    fun updatePreset(value: Preset) {
+    fun setPreset(value: Preset) {
         preset = value
         prefs?.edit()?.putInt(KEY_PRESET, value.ordinal)?.apply()
-        applyEqualizer()
-    }
-
-    /** Steps the loudness boost (Off, +3, +6, +9, +12 dB) and returns the new index. */
-    fun cycleBoost(): Int {
-        setBoost((boostIndex + 1) % boostSteps.size)
-        return boostIndex
+        refresh()
     }
 
     fun setBoost(index: Int) {
         boostIndex = index.coerceIn(0, boostSteps.lastIndex)
         prefs?.edit()?.putInt(KEY_BOOST, boostIndex)?.apply()
-        applyLoudness()
+        refresh()
     }
 
-    private fun rebuild(sessionId: Int) {
+    private fun wanted() = preset != Preset.Flat || boostIndex > 0
+
+    private fun rebuild(id: Int) {
         release()
-        // Session id 0 is the global output mix; never attach effects to it.
-        if (sessionId == 0 || sessionId == -1) return
-        equalizer = try {
-            Equalizer(0, sessionId)
-        } catch (_: Exception) {
-            null
+        sessionId = id
+        refresh()
+    }
+
+    /** Creates the effects when something is switched on, frees them when everything is off. */
+    private fun refresh() {
+        if (!wanted()) {
+            release()
+            return
         }
-        loudness = try {
-            LoudnessEnhancer(sessionId)
-        } catch (_: Exception) {
-            null
+        // Session id 0 is the global output mix; never attach effects to it.
+        if (sessionId <= 0) return
+        if (equalizer == null) {
+            equalizer = try { Equalizer(0, sessionId) } catch (_: Exception) { null }
+        }
+        if (loudness == null) {
+            loudness = try { LoudnessEnhancer(sessionId) } catch (_: Exception) { null }
         }
         applyEqualizer()
         applyLoudness()
@@ -149,9 +152,6 @@ object AudioEffects {
         } catch (_: Exception) {
         }
     }
-
-    /** Gain in millibels a preset applies at [hz]; used to draw the equalizer curve. */
-    fun previewGainMb(preset: Preset, hz: Int): Int = curve(preset, hz)
 
     /** Gain in millibels for a preset at a given frequency. */
     private fun curve(preset: Preset, hz: Int): Int = when (preset) {
