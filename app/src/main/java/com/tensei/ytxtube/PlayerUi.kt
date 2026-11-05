@@ -430,6 +430,7 @@ fun PlayerScreen(
                         }
                         PlayerActions(state)
                         QueueCard(state, onOpen = { state.sheet = PlayerSheet.Queue })
+                        ChaptersCard(state, onOpen = { state.sheet = PlayerSheet.Chapters })
                         CommentsCard(
                             state.comments,
                             onOpen = { state.sheet = PlayerSheet.Comments },

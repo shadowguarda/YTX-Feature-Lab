@@ -3,6 +3,8 @@ name: Release
 on:
   push:
     tags: ["v*"]
+    # Every merge or push to main publishes a full (non pre-release) "latest" release.
+    branches: [main]
   workflow_dispatch:
     inputs:
       tag:
@@ -16,7 +18,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+      TAG: ${{ github.event.inputs.tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || format('v2.2.1-lab.{0}', github.run_number) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -72,9 +74,16 @@ jobs:
         run: |
           APK="YTXTube-${TAG}.apk"
           NOTES="Signed release build of YTXTube ${TAG}.\n\nSHA-256:\n\`$(cat "$APK.sha256")\`"
+          # Builds from main or a version tag are full releases marked Latest.
+          # Anything else (a manual run on another branch) is a pre-release.
+          case "$GITHUB_REF" in
+            refs/heads/main|refs/tags/*) FLAGS="--latest" ;;
+            *) FLAGS="--prerelease" ;;
+          esac
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" "$APK.sha256" --clobber
+            gh release edit "$TAG" $FLAGS
           else
-            gh release create "$TAG" "$APK" "$APK.sha256" \
+            gh release create "$TAG" "$APK" "$APK.sha256" $FLAGS \
               --title "YTXTube ${TAG}" --notes "$(printf "$NOTES")" --target "$GITHUB_SHA"
           fi

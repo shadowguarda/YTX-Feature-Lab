@@ -55,6 +55,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.FormatListBulleted
 import androidx.compose.material.icons.automirrored.rounded.VolumeMute
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.AspectRatio
@@ -78,6 +79,7 @@ import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.RepeatOne
@@ -136,6 +138,8 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -522,6 +526,7 @@ fun VideoContent(
         gestureHud?.let { (icon, info) ->
             GestureHUD(icon = icon, label = info.first, percent = info.second, modifier = Modifier.align(Alignment.TopCenter).padding(top = 18.dp))
         }
+        StatsHud(Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp).zIndex(20f), fullscreen = fullscreen)
 
         val error = state.error
         if (error != null) {
@@ -719,6 +724,9 @@ fun VideoContent(
             val morphFade = controlsAlpha()
             val scrubFade = if (scrubbing) 1f else morphFade
             val segments = if (SponsorBlock.enabled) state.segments.filter { it.action != SponsorBlock.Action.Off } else emptyList()
+            val scrubChapters = state.details?.chapters.orEmpty()
+            val haptics = LocalHapticFeedback.current
+            var lastScrubChapter by remember { mutableIntStateOf(-1) }
             val scrubModifier = when {
                 portraitEdgeScrub -> Modifier
                     .align(Alignment.BottomCenter)
@@ -742,6 +750,7 @@ fun VideoContent(
             }
             Scrubber(
                 segments = segments,
+                chapters = state.details?.chapters.orEmpty(),
                 positionMs = state.positionMs,
                 bufferedMs = state.bufferedMs,
                 durationMs = state.durationMs,
@@ -759,11 +768,24 @@ fun VideoContent(
                 },
                 knob = if (fullscreenControlsScrub) FullscreenScrubKnob else 7.dp,
                 knobDragging = if (fullscreenControlsScrub) FullscreenScrubKnobDragging else 9.dp,
-                onPreview = { state.scrubPreviewMs = it; touched() },
+                onPreview = { ms ->
+                    state.scrubPreviewMs = ms
+                    touched()
+                    if (scrubChapters.size >= 2) {
+                        val index = scrubChapters.indexOfLast { it.startMs <= ms }
+                        if (index != lastScrubChapter) {
+                            if (lastScrubChapter != -1) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            lastScrubChapter = index
+                        }
+                    }
+                },
                 onSeek = { state.endScrubDragging(it); touched() },
                 onDraggingChanged = { dragging ->
                     if (dragging) state.beginScrubDragging()
-                    else state.endScrubDragging()
+                    else {
+                        state.endScrubDragging()
+                        lastScrubChapter = -1
+                    }
                 },
                 modifier = scrubModifier.zIndex(10f),
             )
@@ -787,11 +809,14 @@ fun VideoContent(
                     .zIndex(11f),
                 contentAlignment = Alignment.Center,
             ) {
+                val scrubChapter = state.details?.chapters.orEmpty().takeIf { it.size >= 2 }?.at(scrubPreviewMs)
                 Text(
-                    formatDuration(scrubPreviewMs),
+                    if (scrubChapter != null) "${formatDuration(scrubPreviewMs)} \u00b7 ${scrubChapter.title}" else formatDuration(scrubPreviewMs),
                     color = Color.White,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -851,6 +876,7 @@ fun AudioOnlyStage(
             var scrubPreview by remember { mutableStateOf<Long?>(null) }
             Scrubber(
                 segments = if (SponsorBlock.enabled) state.segments.filter { it.action != SponsorBlock.Action.Off } else emptyList(),
+                chapters = state.details?.chapters.orEmpty(),
                 positionMs = state.positionMs,
                 bufferedMs = state.bufferedMs,
                 durationMs = state.durationMs,
@@ -1222,6 +1248,19 @@ fun PlayerSettingsSheet(state: PlayerState, backdrop: Backdrop, onDismiss: () ->
                 )
 
 
+                state.details?.chapters?.takeIf { it.size >= 2 }?.let { chapters ->
+                    PlayerSettingItem(
+                        icon = Icons.AutoMirrored.Rounded.FormatListBulleted,
+                        title = "Chapters",
+                        value = "${chapters.size} chapters",
+                        onClick = {
+                            onDismiss()
+                            state.sheet = PlayerSheet.Chapters
+                        }
+                    )
+                }
+
+
                 PlayerSettingItem(
                     icon = Icons.Rounded.Repeat,
                     title = "Loop video",
@@ -1237,6 +1276,30 @@ fun PlayerSettingsSheet(state: PlayerState, backdrop: Backdrop, onDismiss: () ->
                     onClick = {
                         val m = SleepTimer.cycle()
                         state.actionMessage = if (m == 0) "Sleep timer off" else "Pausing in $m min"
+                    }
+                )
+
+
+                PlayerSettingItem(
+                    icon = Icons.Rounded.Equalizer,
+                    title = "Equalizer",
+                    value = AudioEffects.boostSteps[AudioEffects.boostIndex].let { mb ->
+                        if (mb == 0) AudioEffects.preset.label else "${AudioEffects.preset.label} · +${mb / 100} dB"
+                    },
+                    onClick = {
+                        onDismiss()
+                        state.sheet = PlayerSheet.Equalizer
+                    }
+                )
+
+
+                PlayerSettingItem(
+                    icon = Icons.Rounded.Info,
+                    title = "Stats for nerds",
+                    value = if (PlayerStats.visible) "On" else "Off",
+                    onClick = {
+                        PlayerStats.toggle()
+                        onDismiss()
                     }
                 )
 
@@ -1574,6 +1637,7 @@ private val FullscreenScrubKnobDragging = 6.dp
 @Composable
 private fun Scrubber(
     segments: List<SponsorBlock.Segment>,
+    chapters: List<Chapter> = emptyList(),
     positionMs: Long,
     bufferedMs: Long,
     durationMs: Long,
@@ -1679,6 +1743,12 @@ private fun Scrubber(
             val x0 = left + trackW * (seg.startMs.toFloat() / duration).coerceIn(0f, 1f)
             val x1 = left + trackW * (seg.endMs.toFloat() / duration).coerceIn(0f, 1f)
             if (x1 > x0) drawRoundRect(seg.category.color, Offset(x0, y), Size(x1 - x0, trackH), r)
+        }
+        // Chapter boundaries: thin gaps in the track, like the official app.
+        chapters.forEach { chapter ->
+            if (chapter.startMs <= 0L) return@forEach
+            val x = left + trackW * (chapter.startMs.toFloat() / duration).coerceIn(0f, 1f)
+            drawRect(Color.Black.copy(alpha = 0.55f), Offset(x - 1.dp.toPx(), y), Size(2.dp.toPx(), trackH))
         }
         if (chromeActive) {
             val knobR = knobRadius.toPx()
