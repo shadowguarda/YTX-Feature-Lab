@@ -1001,12 +1001,12 @@ fun sharpenChannelAvatarUrl(url: String, minEdgePx: Int): String {
     val normalized = normalizeChannelAvatarUrl(url)
     val m = Regex("=s(\\d+)").find(normalized) ?: return normalized
     val current = m.groupValues[1].toIntOrNull() ?: return normalized
-    if ("/ytc/" in normalized && current > 96 && "googleusercontent.com" !in normalized) {
+    if ("/ytc/" in normalized && current > 96) {
         return normalized.replace(Regex("=s\\d+"), "=s96")
     }
     if (current >= minEdgePx) return normalized
 
-    val ceiling = if ("/ytc/" in normalized && "googleusercontent.com" !in normalized) 96 else 800
+    val ceiling = if ("/ytc/" in normalized) 96 else 800
     val edge = minOf(minEdgePx, ceiling).coerceAtLeast(current)
     return normalized.replace(Regex("=s\\d+"), "=s$edge")
 }
