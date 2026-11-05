@@ -1290,6 +1290,12 @@ private fun GeneralModificationContent(context: Context) {
             onClick = { showAmbientSheet = true },
         )
         if (showAmbientSheet) AmbientSettingsSheet(onDismiss = { showAmbientSheet = false })
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "YTX Lab",
+            subtitle = "Extra features of this fork",
+            onClick = { context.startActivity(android.content.Intent(context, LabActivity::class.java)) },
+        )
 
         HorizontalDivider(color = c.onSurface.copy(alpha = 0.08f))
 

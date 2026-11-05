@@ -16,8 +16,8 @@ android {
         applicationId = "com.kairoxy.ytxlab"
         minSdk = 24
         targetSdk = 36
-        versionCode = 240
-        versionName = "2.4.0"
+        versionCode = 241
+        versionName = "2.4.1"
     }
 
     signingConfigs {
