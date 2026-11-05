@@ -16,6 +16,10 @@ A lightweight YouTube and YouTube Music client with a modern Liquid Glass UI, ad
 - Search, channels, playlists and community posts
 - Background playback and picture-in-picture
 - Sleep timer and skip silence
+- Video chapters with thumbnails, scrubber ticks and haptic feedback while scrubbing
+- Equalizer with an animated curve, presets and loudness boost
+- Stats for nerds: draggable live panel with network and buffer graphs
+- DeArrow titles and blocked keywords / channels
 - Faster starts: the first videos in every feed and the next-up videos are resolved ahead of the tap, and the video server connection is pre-warmed
 - Android TV support too: the same APK runs on TV with full D-pad navigation
 
@@ -23,7 +27,7 @@ A lightweight YouTube and YouTube Music client with a modern Liquid Glass UI, ad
 
 [Download the latest YTXTube APK](https://github.com/shadowguarda/YTX-Feature-Lab/releases/latest)
 
-Version 2.2.0 · Android 7.0+ · one APK for phones, tablets and Android TV.
+Version 2.3.0 · Android 7.0+ · one APK for phones, tablets and Android TV.
 
 ## Screenshots
 
