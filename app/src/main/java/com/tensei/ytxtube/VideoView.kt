@@ -138,6 +138,8 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -722,6 +724,9 @@ fun VideoContent(
             val morphFade = controlsAlpha()
             val scrubFade = if (scrubbing) 1f else morphFade
             val segments = if (SponsorBlock.enabled) state.segments.filter { it.action != SponsorBlock.Action.Off } else emptyList()
+            val scrubChapters = state.details?.chapters.orEmpty()
+            val haptics = LocalHapticFeedback.current
+            var lastScrubChapter by remember { mutableIntStateOf(-1) }
             val scrubModifier = when {
                 portraitEdgeScrub -> Modifier
                     .align(Alignment.BottomCenter)
@@ -763,11 +768,24 @@ fun VideoContent(
                 },
                 knob = if (fullscreenControlsScrub) FullscreenScrubKnob else 7.dp,
                 knobDragging = if (fullscreenControlsScrub) FullscreenScrubKnobDragging else 9.dp,
-                onPreview = { state.scrubPreviewMs = it; touched() },
+                onPreview = { ms ->
+                    state.scrubPreviewMs = ms
+                    touched()
+                    if (scrubChapters.size >= 2) {
+                        val index = scrubChapters.indexOfLast { it.startMs <= ms }
+                        if (index != lastScrubChapter) {
+                            if (lastScrubChapter != -1) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            lastScrubChapter = index
+                        }
+                    }
+                },
                 onSeek = { state.endScrubDragging(it); touched() },
                 onDraggingChanged = { dragging ->
                     if (dragging) state.beginScrubDragging()
-                    else state.endScrubDragging()
+                    else {
+                        state.endScrubDragging()
+                        lastScrubChapter = -1
+                    }
                 },
                 modifier = scrubModifier.zIndex(10f),
             )
@@ -791,11 +809,14 @@ fun VideoContent(
                     .zIndex(11f),
                 contentAlignment = Alignment.Center,
             ) {
+                val scrubChapter = state.details?.chapters.orEmpty().takeIf { it.size >= 2 }?.at(scrubPreviewMs)
                 Text(
-                    formatDuration(scrubPreviewMs),
+                    if (scrubChapter != null) "${formatDuration(scrubPreviewMs)} \u00b7 ${scrubChapter.title}" else formatDuration(scrubPreviewMs),
                     color = Color.White,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

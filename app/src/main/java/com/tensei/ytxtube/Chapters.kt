@@ -1,7 +1,10 @@
 package com.tensei.ytxtube
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,6 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -31,7 +36,7 @@ import androidx.compose.ui.unit.sp
 
 /** A creator-defined chapter: it starts at [startMs] and runs until the next one begins. */
 @Immutable
-data class Chapter(val title: String, val startMs: Long)
+data class Chapter(val title: String, val startMs: Long, val previewUrl: String? = null)
 
 /** The chapter playing at [positionMs]: the last one that has started. */
 fun List<Chapter>.at(positionMs: Long): Chapter? = lastOrNull { it.startMs <= positionMs }
@@ -95,12 +100,34 @@ fun ChaptersSheet(player: PlayerState, onDismiss: () -> Unit) {
                         .padding(horizontal = 24.dp, vertical = 13.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        formatDuration(chapter.startMs),
-                        color = if (selected) c.primary else c.onSurfaceVariant,
-                        fontWeight = FontWeight.Bold, fontSize = 13.sp,
-                        modifier = Modifier.width(64.dp),
-                    )
+                    if (chapter.previewUrl != null) {
+                        Box(Modifier.width(104.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(10.dp)).background(c.surfaceContainerHigh)) {
+                            AsyncImage(
+                                model = chapter.previewUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            Text(
+                                formatDuration(chapter.startMs),
+                                color = Color.White, fontWeight = FontWeight.Bold, fontSize = 10.5.sp,
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(4.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Color.Black.copy(alpha = 0.7f))
+                                    .padding(horizontal = 5.dp, vertical = 1.dp),
+                            )
+                        }
+                        Spacer(Modifier.width(14.dp))
+                    } else {
+                        Text(
+                            formatDuration(chapter.startMs),
+                            color = if (selected) c.primary else c.onSurfaceVariant,
+                            fontWeight = FontWeight.Bold, fontSize = 13.sp,
+                            modifier = Modifier.width(64.dp),
+                        )
+                    }
                     Text(
                         chapter.title,
                         color = if (selected) c.primary else c.onSurface,

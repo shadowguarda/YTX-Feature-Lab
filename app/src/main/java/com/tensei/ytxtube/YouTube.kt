@@ -271,7 +271,7 @@ object YouTube {
                 ?.takeIf { it.width > 0 && it.height > 0 }?.let { it.width.toFloat() / it.height },
             chapters = info.streamSegments.orEmpty().mapNotNull { s ->
                 val t = s.title?.trim().orEmpty()
-                if (t.isEmpty()) null else Chapter(t, s.startTimeSeconds * 1000L)
+                if (t.isEmpty()) null else Chapter(t, s.startTimeSeconds * 1000L, s.previewUrl?.takeIf { it.isNotBlank() })
             }.sortedBy { it.startMs },
         )
     }
