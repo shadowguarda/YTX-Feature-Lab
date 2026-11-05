@@ -453,6 +453,12 @@ fun VideoContent(
                 .clipToBounds()
                 .transformable(state = zoomState),
         ) {
+            // Fullscreen on a screen the video does not fill: light the black bands with its colours.
+            val fillBands = fullscreen && AmbientSettings.enabled && AmbientSettings.fillBands && !state.zoomToFill
+            val fillFrames = rememberAmbientFrames(active = fillBands)
+            if (fillBands && fillFrames.current != null) {
+                androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) { drawAmbientFill(fillFrames) }
+            }
             Box(
                 Modifier
                     .fillMaxSize()

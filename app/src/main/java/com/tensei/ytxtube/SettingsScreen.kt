@@ -1242,6 +1242,7 @@ private fun GeneralModificationContent(context: Context) {
     var showFolderDialog by remember { mutableStateOf(false) }
     var showKeywordDialog by remember { mutableStateOf(false) }
     var showChannelDialog by remember { mutableStateOf(false) }
+    var showAmbientSheet by remember { mutableStateOf(false) }
 
     val folderPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -1282,6 +1283,13 @@ private fun GeneralModificationContent(context: Context) {
             checked = AmbientSettings.enabled,
             onCheckedChange = { AmbientSettings.updateEnabled(it) },
         )
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "Customise ambient light",
+            subtitle = "Intensity, reach, softness, speed, status bar glow and fullscreen fill",
+            onClick = { showAmbientSheet = true },
+        )
+        if (showAmbientSheet) AmbientSettingsSheet(onDismiss = { showAmbientSheet = false })
 
         HorizontalDivider(color = c.onSurface.copy(alpha = 0.08f))
 

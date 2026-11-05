@@ -6,7 +6,7 @@ A lightweight YouTube and YouTube Music client with a modern Liquid Glass UI, ad
 
 ## Features
 
-- Live ambient light: the playing video's colours glow behind the player (toggle in Settings)
+- Live ambient light with its own settings sheet: intensity, reach, softness, saturation, follow speed, fade, status-bar glow and a colour fill for the black bands in fullscreen
 - Liquid Glass interface across the player, Shorts, fullscreen controls, settings and music mini player
 - Ad-free YouTube and YouTube Music playback
 - Personalised Shorts feed with a one-tap fresh batch and loading animation
@@ -27,7 +27,7 @@ A lightweight YouTube and YouTube Music client with a modern Liquid Glass UI, ad
 
 [Download the latest YTXTube APK](https://github.com/shadowguarda/YTX-Feature-Lab/releases/latest)
 
-Version 2.3.0 · Android 7.0+ · one APK for phones, tablets and Android TV.
+Version 2.4.0 · Android 7.0+ · one APK for phones, tablets and Android TV.
 
 ## Screenshots
 
