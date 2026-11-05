@@ -27,7 +27,7 @@ A lightweight YouTube and YouTube Music client with a modern Liquid Glass UI, ad
 
 [Download the latest YTXTube APK](https://github.com/shadowguarda/YTX-Feature-Lab/releases/latest)
 
-Version 2.3.0 · Android 7.0+ · one APK for phones, tablets and Android TV.
+Version 2.4.0 · Android 7.0+ · one APK for phones, tablets and Android TV.
 
 ## Screenshots
 
