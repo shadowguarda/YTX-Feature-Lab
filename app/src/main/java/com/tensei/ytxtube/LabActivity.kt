@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -35,22 +34,19 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 
 /**
- * YTX Lab: one screen, with its own launcher icon, that holds the extra features added in this
- * fork. It is separate from the main app screens so those stay untouched.
+ * YTX Lab: one screen, with its own launcher icon, for the settings that have no home in the main
+ * app yet: dislike counts, backup and restore. The equalizer and the stats HUD live in the player.
  */
 class LabActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,29 +107,6 @@ private fun LabScreen() {
 
             Section("Dislike counts") { ReturnDislikeSetting() }
 
-            Section("Audio") {
-                Text("Equalizer", Modifier.padding(horizontal = 20.dp), fontWeight = FontWeight.SemiBold)
-                ChipRow {
-                    AudioEffects.Preset.entries.forEach { p ->
-                        LabChip(p.label, AudioEffects.preset == p) { AudioEffects.setPreset(p) }
-                    }
-                }
-                Text("Loudness boost", Modifier.padding(horizontal = 20.dp), fontWeight = FontWeight.SemiBold)
-                ChipRow {
-                    AudioEffects.boostSteps.forEachIndexed { i, mb ->
-                        LabChip(if (mb == 0) "Off" else "+${mb / 100} dB", AudioEffects.boostIndex == i) {
-                            AudioEffects.setBoost(i)
-                        }
-                    }
-                }
-                Text(
-                    "Applies to the video or song that is playing, and to the next ones.",
-                    Modifier.padding(horizontal = 20.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp,
-                )
-            }
-
             Section("Playback") {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 20.dp),
@@ -171,33 +144,6 @@ private fun LabScreen() {
                     Text(it, Modifier.padding(horizontal = 20.dp), fontSize = 13.sp)
                 }
             }
-
-            Section("Live player stats") { LiveStats() }
-        }
-    }
-}
-
-@Composable
-private fun LiveStats() {
-    val rows by produceState(initialValue = emptyList<Pair<String, String>>()) {
-        while (true) {
-            value = PlayerBridge.exo?.let(PlayerStats::read).orEmpty()
-            delay(1_000L)
-        }
-    }
-    if (rows.isEmpty()) {
-        Text(
-            "Play a video in YTXTube, then come back here to see its resolution, codecs, buffer and dropped frames.",
-            Modifier.padding(horizontal = 20.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 13.sp,
-        )
-        return
-    }
-    rows.forEach { (label, value) ->
-        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-            Text(label, Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-            Text(value, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
         }
     }
 }
@@ -252,6 +198,5 @@ private fun LabChip(text: String, selected: Boolean, onClick: () -> Unit) {
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
         )
-        Spacer(Modifier)
     }
 }
