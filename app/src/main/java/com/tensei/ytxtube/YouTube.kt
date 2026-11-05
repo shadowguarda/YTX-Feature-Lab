@@ -1001,7 +1001,8 @@ fun sharpenChannelAvatarUrl(url: String, minEdgePx: Int): String {
     val normalized = normalizeChannelAvatarUrl(url)
     val m = Regex("=s(\\d+)").find(normalized) ?: return normalized
     val current = m.groupValues[1].toIntOrNull() ?: return normalized
-    if ("/ytc/" in normalized && current > 96) {
+    // /ytc/ avatars top out at 96px, so always ask for exactly that: sharpest they come.
+    if ("/ytc/" in normalized) {
         return normalized.replace(Regex("=s\\d+"), "=s96")
     }
     if (current >= minEdgePx) return normalized
