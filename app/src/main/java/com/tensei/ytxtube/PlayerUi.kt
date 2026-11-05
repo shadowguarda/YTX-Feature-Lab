@@ -233,6 +233,7 @@ fun PlayerScreen(
     val isAmoled = ThemeSettings.mode == "amoled"
     val ambientOn = AmbientSettings.enabled && !isAmoled && !state.isMusicMode
     val ambientFrames = rememberAmbientFrames(active = ambientOn)
+    val ambientStatusBarPx = if (AmbientSettings.statusBar) WindowInsets.statusBars.getTop(LocalDensity.current) else 0
     val pageColor = if (isAmoled) Color.Black else c.surface
     val miniColor = when {
         isAmoled -> Color(0xFF000000)
@@ -310,7 +311,7 @@ fun PlayerScreen(
                 if (!ambientOn || ambientFrames.current == null) return@drawBehind
                 val reveal = ramp(morph.progress.value, 0.5f)
                 if (reveal <= 0f) return@drawBehind
-                drawAmbientGlow(ambientFrames, pageColor, strength = reveal * (if (isDark) 1f else 0.75f))
+                drawAmbientGlow(ambientFrames, pageColor, strength = reveal * (if (isDark) 1f else 0.75f), statusBarPx = ambientStatusBarPx)
             }
             .then(if (interactive) Modifier.pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } } else Modifier),
     ) {
