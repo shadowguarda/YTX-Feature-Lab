@@ -869,7 +869,7 @@ class SearchState(private val scope: CoroutineScope) {
         job?.cancel()
         job = scope.launch {
             runCatching { YouTube.search(q) }
-                .onSuccess { results = it; generation++ }
+                .onSuccess { results = ContentFilters.filter(it); generation++ }
                 .onFailure { error = YouTube.friendlyError(it) }
             loading = false
         }

@@ -44,6 +44,8 @@ object ResumeStore {
     fun save(id: String, positionMs: Long, durationMs: Long) {
         if (id.isBlank() || durationMs <= 0 || durationMs == C.TIME_UNSET) return
         if (positionMs < EDGE_MS || positionMs > durationMs - EDGE_MS) {
+            // Near the end means the video was watched; remember that separately.
+            if (positionMs >= EDGE_MS && positionMs > durationMs - EDGE_MS) Watched.add(id)
 
             if (positions.remove(id) != null) prefs?.edit()?.remove(id)?.apply()
             return

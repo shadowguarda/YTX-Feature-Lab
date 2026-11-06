@@ -396,7 +396,7 @@ class PlayerState(private val scope: CoroutineScope) {
     private fun startPlayback(item: VideoItem) {
         val player = controller ?: run { pendingStart = item; return }
 
-        replaceCurrent(player, item, positionMs = ResumeStore.startPosition(item.id))
+        replaceCurrent(player, item, positionMs = if (Tweaks.resume.value) ResumeStore.startPosition(item.id) else 0L)
         player.play()
         if (selectedSubtitleLanguage != null) setSubtitleLanguage(selectedSubtitleLanguage)
         refreshTracks()
@@ -856,7 +856,7 @@ class PlayerState(private val scope: CoroutineScope) {
         if (!player.isPlaying) return false
         speedBeforeHold = player.playbackParameters.speed
         holdSpeedActive = true
-        previewSpeed(2f)
+        previewSpeed(Tweaks.holdSpeed)
         return true
     }
 
