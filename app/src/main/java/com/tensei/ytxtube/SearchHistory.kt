@@ -32,7 +32,7 @@ object SearchHistory {
 
     fun add(query: String) {
         val q = query.trim()
-        if (q.isBlank()) return
+        if (q.isBlank() || Tweaks.noSearchHistory) return
         val current = queries.toMutableList()
         current.removeAll { it.equals(q, ignoreCase = true) }
         current.add(0, q)

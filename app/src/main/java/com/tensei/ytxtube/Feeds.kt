@@ -93,7 +93,7 @@ class FeedState(
                     next = it.next
                     generation++
                     // Resolve the first few streams now so the tap that follows starts playing at once.
-                    StreamCache.prefetchAll(it.videos.asSequence().take(3).map { v -> v.id }.asIterable())
+                    if (Tweaks.preload.value) StreamCache.prefetchAll(it.videos.asSequence().take(3).map { v -> v.id }.asIterable())
                     if (freshOnRefresh) it.videos.forEach { v -> shown += v.id }
                 }
                 .onFailure { error = friendly(it) }

@@ -21,5 +21,9 @@
 - **QueueStore.kt:** remembers the playing video and queue; the queue sheet offers to restore it.
 - **Origin:** ideas came from two prototype archives (adv yt / yt). Their code was mostly demonstration state (fake cast devices, scrobbles never sent, fixed storage numbers), so it was not copied; these are new implementations of the viable ideas.
 
+## Tweaks round 2 (2.9.0)
+- All options live in `Tweaks` (persisted, observable) and are read at the point of use: `startPlayback` (default speed, skip first seconds, auto captions), `StreamSelection` via `Tweaks.cappedHeight` (mobile-data quality cap, uses `isActiveNetworkMetered`), `VideoRow` (thumbnail width, title lines, views, upload date, duration), the theme root (text and interface scale through `LocalDensity`), history stores (incognito and pausing gate `SearchHistory`, `ResumeStore`, `RecentMusic`, `Discovery`, `QueueStore`, `UsageStats`), and the video gesture handler.
+- Limits: interface size changes density for the whole app, so very large text plus 110% interface size can crowd small screens; the mobile-data cap applies when the stream is resolved, not mid-playback; "Preload" off disables prefetching of feeds, related videos, Shorts and rows.
+
 ## Testing status
 CI (`build.yml`) compiles the release build and runs the unit tests. No feature in this document has been run on a device.

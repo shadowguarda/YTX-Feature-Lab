@@ -70,6 +70,7 @@ import androidx.compose.material.icons.outlined.ThumbDown
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material.icons.outlined.WatchLater
 import android.content.Intent
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.OpenInBrowser
@@ -235,6 +236,13 @@ fun PlayerScreen(
 
     val isDark = isDarkTheme()
     val isAmoled = ThemeSettings.mode == "amoled"
+    // Time spent watching and listening, kept on the device (see Privacy). Not counted in incognito.
+    LaunchedEffect(item.id, state.isMusicMode) {
+        while (true) {
+            kotlinx.coroutines.delay(1_000L)
+            if (state.isPlaying && !Tweaks.incognito.value) UsageStats.tick(state.isMusicMode)
+        }
+    }
     // A video counts towards personalised "More videos" after 30 seconds of actual watching.
     LaunchedEffect(item.id, Discovery.enabled, state.isMusicMode) {
         if (!Discovery.enabled || state.isMusicMode) return@LaunchedEffect
@@ -757,6 +765,30 @@ private fun PlayerActions(state: PlayerState) {
             ) {
                 runCatching {
                     context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com/watch?v=${item.id}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                }
+            }
+            if (Tweaks.extraCopyButtons.value) {
+                fun copy(label: String, text: String, message: String) {
+                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText(label, text))
+                    state.actionMessage = message
+                }
+                ActionPill(
+                    icon = Icons.Rounded.ContentCopy, label = "Copy title", active = false, flourish = Flourish.Pop,
+                    shape = RoundedCornerShape(18.dp), description = "Copy video title",
+                ) { copy("Title", item.title, "Title copied") }
+                item.channelUrl?.let { url ->
+                    ActionPill(
+                        icon = Icons.Rounded.Link, label = "Channel link", active = false, flourish = Flourish.Pop,
+                        shape = RoundedCornerShape(18.dp), description = "Copy channel link",
+                    ) { copy("Channel", url, "Channel link copied") }
+                }
+                val description = state.details?.description.orEmpty()
+                if (description.isNotBlank()) {
+                    ActionPill(
+                        icon = Icons.Rounded.ContentCopy, label = "Copy description", active = false, flourish = Flourish.Pop,
+                        shape = RoundedCornerShape(18.dp), description = "Copy video description",
+                    ) { copy("Description", description, "Description copied") }
                 }
             }
             if (Tweaks.showMarkWatched.value) {

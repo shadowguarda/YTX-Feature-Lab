@@ -27,6 +27,7 @@ class YTXTubeApplication : Application(), ImageLoaderFactory {
         ContentFilters.init(this)
         Tweaks.init(this)
         Watched.init(this)
+        UsageStats.init(this)
         Discovery.init(this)
         ListenBrainz.init(this)
         QueueStore.init(this)

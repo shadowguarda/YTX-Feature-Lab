@@ -249,7 +249,7 @@ fun VideoContent(
     val scrubbing = state.scrubDragging
     val scrubPreviewMs = state.scrubPreviewMs
     val zoomState = rememberTransformableState { zoomChange, _, _ ->
-        if (interactive) {
+        if (interactive && Tweaks.pinchZoom.value) {
             state.videoZoom = (state.videoZoom * zoomChange).coerceIn(1f, 4f)
         }
     }
@@ -339,8 +339,8 @@ fun VideoContent(
                             if (fullscreen) {
 
                                 val gesturesOn = VideoGestureSettings.enabled
-                                val isLeftEdge = gesturesOn && downX < 0.20f
-                                val isRightEdge = gesturesOn && downX > 0.80f
+                                val isLeftEdge = gesturesOn && Tweaks.brightnessSwipe.value && downX < 0.20f
+                                val isRightEdge = gesturesOn && Tweaks.volumeSwipe.value && downX > 0.80f
 
                                 if (!isDraggingGesture && isVerticalIntent && kotlin.math.abs(totalDy) > 60f) {
                                     if (isLeftEdge || isRightEdge) {
@@ -406,7 +406,7 @@ fun VideoContent(
 
                     if (elapsed >= holdSpeedMs - 80L) {
                         seekWindow?.cancel()
-                        if (!state.scrubDragging && state.beginHoldSpeed()) {
+                        if (!state.scrubDragging && Tweaks.holdSpeedOn.value && state.beginHoldSpeed()) {
                             currentView.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                             controlsVisible = false
                             burstActive = false
@@ -533,6 +533,21 @@ fun VideoContent(
             GestureHUD(icon = icon, label = info.first, percent = info.second, modifier = Modifier.align(Alignment.TopCenter).padding(top = 18.dp))
         }
         StatsHud(Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp).zIndex(20f), fullscreen = fullscreen)
+        if (fullscreen && Tweaks.fullscreenClock.value) {
+            var clock by remember { mutableStateOf("") }
+            LaunchedEffect(Unit) {
+                val fmt = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT)
+                while (true) {
+                    clock = fmt.format(java.util.Date())
+                    kotlinx.coroutines.delay(15_000L)
+                }
+            }
+            Text(
+                clock,
+                color = Color.White.copy(alpha = 0.85f), fontWeight = FontWeight.Bold, fontSize = 13.sp,
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 12.dp, end = 16.dp).zIndex(20f),
+            )
+        }
         if (FrameStep.enabled && !state.isPlaying) {
             Row(
                 Modifier.align(Alignment.TopCenter).padding(top = 56.dp).zIndex(20f),

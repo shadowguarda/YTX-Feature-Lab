@@ -22,6 +22,7 @@ A lightweight YouTube and YouTube Music client with a modern Liquid Glass UI, ad
 - Search filters: duration, upload date, live only and sort order
 - Like/dislike bar on the watch page (Return YouTube Dislike)
 - YTX Tweaks: hide Shorts, live, watched, too short/long or low-view videos; seek step, hold-speed, control timeout, remaining time, haptics and resume options; share at current time, copy link, open in browser and mark watched buttons; hide download, chapters, comments or related
+- 32 more options in YTX Tweaks: default speed, skip-first-seconds, auto captions, mobile-data quality cap, fullscreen clock, incognito and history pausing, preload switch, start tab, text and interface size, video-list layout, gesture switches, copy buttons, watch-time stats, system shortcuts and a reset
 - Personalised related videos (on-device, off by default, with a reason shown for each move), real ListenBrainz scrobbling with an offline queue, frame-by-frame stepping, lyrics timing offset, and restore-last-queue
 - Settings search that jumps to the matching setting, and a Privacy sheet: clear history, see what stays on the device and what is sent out
 - DeArrow titles and blocked keywords / channels
@@ -32,7 +33,7 @@ A lightweight YouTube and YouTube Music client with a modern Liquid Glass UI, ad
 
 [Download the latest YTXTube APK](https://github.com/shadowguarda/YTX-Feature-Lab/releases/latest)
 
-Version 2.8.0 · Android 7.0+ · one APK for phones, tablets and Android TV.
+Version 2.9.0 · Android 7.0+ · one APK for phones, tablets and Android TV.
 
 ## Screenshots
 

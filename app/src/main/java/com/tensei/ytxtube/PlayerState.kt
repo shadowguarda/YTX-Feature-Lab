@@ -344,7 +344,7 @@ class PlayerState(private val scope: CoroutineScope) {
                     // Resolve the likely next-up streams while this one plays, so autoplay and a tap
                     // on "up next" start without waiting on extraction.
                     if (!isMusicMode) {
-                        StreamCache.prefetchAll(d.related.asSequence().filter { it.id != item.id }.take(2).map { it.id }.asIterable())
+                        if (Tweaks.preload.value) StreamCache.prefetchAll(d.related.asSequence().filter { it.id != item.id }.take(2).map { it.id }.asIterable())
                     }
                     if (!d.playable) error = "No playable stream was found for this video."
                     else if (startPlayback) startPlayback(d.item)
@@ -398,6 +398,9 @@ class PlayerState(private val scope: CoroutineScope) {
 
         replaceCurrent(player, item, positionMs = if (Tweaks.resume.value) ResumeStore.startPosition(item.id) else 0L)
         player.play()
+        player.setPlaybackSpeed(Tweaks.defaultSpeedX100.value / 100f)
+        if (Tweaks.skipFirstSec.value > 0 && player.currentPosition < 1_000L) player.seekTo(Tweaks.skipFirstSec.value * 1000L)
+        if (selectedSubtitleLanguage == null && Tweaks.autoCaptions.value && !isMusicMode) setSubtitleLanguage(Tweaks.captionLang.value)
         if (selectedSubtitleLanguage != null) setSubtitleLanguage(selectedSubtitleLanguage)
         refreshTracks()
     }

@@ -477,7 +477,7 @@ fun ShortsScreen(
         preload.keepOnly(keep)
         if (upcoming.isEmpty()) return@LaunchedEffect
 
-        withContext(Dispatchers.IO) { upcoming.forEach { StreamCache.prefetch(it.id) } }
+        if (Tweaks.preload.value) withContext(Dispatchers.IO) { upcoming.forEach { StreamCache.prefetch(it.id) } }
         upcoming.forEachIndexed { index, item ->
             if (preload.has(item.id)) return@forEachIndexed
             val loaded = withContext(Dispatchers.IO) {
