@@ -208,7 +208,7 @@ fun ThemeEngineSettingsContent(context: Context) {
                 val selected = LiquidGlassThemeEngine.typographyPreset == typo
                 FilterChip(
                     selected = selected,
-                    onClick = { LiquidGlassThemeEngine.setTypographyPreset(typo) },
+                    onClick = { LiquidGlassThemeEngine.updateTypographyPreset(typo) },
                     label = { Text(typo.label, fontFamily = typo.fontFamily) }
                 )
             }
@@ -231,7 +231,7 @@ fun ThemeEngineSettingsContent(context: Context) {
                 val selected = LiquidGlassThemeEngine.gradientBackground == style
                 FilterChip(
                     selected = selected,
-                    onClick = { LiquidGlassThemeEngine.setGradientBackground(style) },
+                    onClick = { LiquidGlassThemeEngine.updateGradientBackground(style) },
                     label = { Text(style.label) }
                 )
             }

@@ -159,7 +159,7 @@ object PrivacyPersonalisation {
     }
 
     // 113. Private Playlist PIN
-    fun setPrivatePlaylistPin(pin: String?) {
+    fun updatePrivatePlaylistPin(pin: String?) {
         privatePlaylistPin = pin
         prefs?.edit()?.putString("playlist_pin", pin)?.apply()
     }

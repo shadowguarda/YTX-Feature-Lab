@@ -268,27 +268,27 @@ object LiquidGlassThemeEngine {
             ?.apply()
     }
 
-    fun setGradientBackground(style: GradientBackgroundStyle) {
+    fun updateGradientBackground(style: GradientBackgroundStyle) {
         gradientBackground = style
         prefs?.edit()?.putString("gradient_bg", style.name)?.apply()
     }
 
-    fun setDynamicThumbnailBackground(enabled: Boolean) {
+    fun updateDynamicThumbnailBackground(enabled: Boolean) {
         dynamicThumbnailBackground = enabled
         prefs?.edit()?.putBoolean("dynamic_thumb_bg", enabled)?.apply()
     }
 
-    fun setSeparatePlayerTheme(enabled: Boolean) {
+    fun updateSeparatePlayerTheme(enabled: Boolean) {
         separatePlayerTheme = enabled
         prefs?.edit()?.putBoolean("sep_player_theme", enabled)?.apply()
     }
 
-    fun setSeparateMusicTheme(enabled: Boolean) {
+    fun updateSeparateMusicTheme(enabled: Boolean) {
         separateMusicTheme = enabled
         prefs?.edit()?.putBoolean("sep_music_theme", enabled)?.apply()
     }
 
-    fun setTypographyPreset(preset: TypographyPreset) {
+    fun updateTypographyPreset(preset: TypographyPreset) {
         typographyPreset = preset
         prefs?.edit()?.putString("typography_preset", preset.name)?.apply()
     }
@@ -342,11 +342,11 @@ object LiquidGlassThemeEngine {
             updateBorderGlow(glow)
             updateCornerRadius(radius)
             setCustomColors(prim, sec)
-            setGradientBackground(grad)
-            setDynamicThumbnailBackground(dynThumb)
-            setSeparatePlayerTheme(sepPlay)
-            setSeparateMusicTheme(sepMusic)
-            setTypographyPreset(typo)
+            updateGradientBackground(grad)
+            updateDynamicThumbnailBackground(dynThumb)
+            updateSeparatePlayerTheme(sepPlay)
+            updateSeparateMusicTheme(sepMusic)
+            updateTypographyPreset(typo)
 
             val h = json.optString("home_theme_seed", "").takeIf { it.isNotBlank() }
             val p = json.optString("player_theme_seed", "").takeIf { it.isNotBlank() }
