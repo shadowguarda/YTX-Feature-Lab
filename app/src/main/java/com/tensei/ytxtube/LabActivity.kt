@@ -119,7 +119,8 @@ private fun LabScreen() {
                 .fillMaxSize()
                 .background(
                     Brush.radialGradient(
-                        colors = if (dark) listOf(Color(0x553B82F6), Color.Transparent),
+                        colors = if (dark) listOf(Color(0x553B82F6), Color.Transparent)
+                        else listOf(Color(0x334F8FE8), Color.Transparent),
                         center = androidx.compose.ui.geometry.Offset(0.82f, 0.08f),
                         radius = 900f,
                     )
