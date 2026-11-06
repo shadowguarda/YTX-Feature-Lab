@@ -82,7 +82,7 @@ import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Repeat
-import androidx.compose.material.icons.rounded.RepeatOne
+import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.Replay10
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SkipNext
@@ -533,6 +533,24 @@ fun VideoContent(
             GestureHUD(icon = icon, label = info.first, percent = info.second, modifier = Modifier.align(Alignment.TopCenter).padding(top = 18.dp))
         }
         StatsHud(Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp).zIndex(20f), fullscreen = fullscreen)
+        if (FrameStep.enabled && !state.isPlaying) {
+            Row(
+                Modifier.align(Alignment.TopCenter).padding(top = 56.dp).zIndex(20f),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                listOf("◀ Frame" to false, "Frame ▶" to true).forEach { (label, forward) ->
+                    Text(
+                        label,
+                        color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(Color.Black.copy(alpha = 0.6f))
+                            .pressable { FrameStep.step(forward) }
+                            .padding(horizontal = 16.dp, vertical = 9.dp),
+                    )
+                }
+            }
+        }
 
         val error = state.error
         if (error != null) {
@@ -1322,11 +1340,11 @@ fun PlayerSettingsSheet(state: PlayerState, backdrop: Backdrop, onDismiss: () ->
 
 
                 PlayerSettingItem(
-                    icon = Icons.Rounded.RepeatOne,
-                    title = "Loop video",
-                    value = if (LoopVideo.enabled) "On" else "Off",
+                    icon = Icons.Rounded.Slideshow,
+                    title = "Frame step",
+                    value = if (FrameStep.enabled) "On" else "Off",
                     onClick = {
-                        state.actionMessage = if (LoopVideo.toggle()) "Looping this video" else "Loop off"
+                        state.actionMessage = if (FrameStep.toggle()) "Pause, then step frame by frame" else "Frame step off"
                     }
                 )
 

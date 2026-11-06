@@ -469,12 +469,14 @@ class PlayerState(private val scope: CoroutineScope) {
         val player = controller ?: return
         val from = player.currentMediaItemIndex + 1
         if (from < player.mediaItemCount) player.removeMediaItems(from, player.mediaItemCount)
+        QueueStore.forget()
     }
 
     private fun rebuildQueue() {
         val player = controller ?: return
         val from = player.currentMediaItemIndex + 1
         queue = (from until player.mediaItemCount).map { i -> itemFor(player.getMediaItemAt(i)) }
+        QueueStore.remember(current, queue)
     }
 
     private fun itemFor(media: MediaItem): VideoItem = known[media.mediaId] ?: VideoItem(

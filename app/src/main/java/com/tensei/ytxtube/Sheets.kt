@@ -166,6 +166,17 @@ fun QueueSheet(player: PlayerState, onDismiss: () -> Unit) {
                 color = c.onSurfaceVariant, fontSize = 14.sp,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
             )
+            val restorable = QueueStore.saved.filter { it.id != player.current?.id }
+            if (restorable.isNotEmpty()) {
+                Text(
+                    "Restore last queue (${restorable.size} videos)",
+                    color = c.primary, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp,
+                    modifier = Modifier
+                        .padding(horizontal = 12.dp)
+                        .pressable { restorable.forEach { player.addToQueue(it) } }
+                        .padding(8.dp),
+                )
+            }
         } else {
             LazyColumn(Modifier.fillMaxHeight(0.7f)) {
                 itemsIndexed(player.queue, key = { i, v -> "$i-${v.id}" }) { index, video ->

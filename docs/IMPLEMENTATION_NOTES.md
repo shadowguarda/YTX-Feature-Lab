@@ -14,5 +14,12 @@
 ## Ambient light (AmbientLight.kt, AmbientSettingsSheet.kt)
 - Samples a 48x27 frame from the video TextureView, box-blurs it and paints it behind the page; every parameter is user-tunable. Adapted from MeeTube (MIT), credited in THIRD_PARTY_NOTICES.md.
 
+## Discovery, ListenBrainz, frame step, queue restore
+- **Discovery.kt:** `DiscoveryRanker` is pure logic (unit-tested in `DiscoveryRankerTest`): title words weighted by recency plus a channel bonus that fades when a channel is overplayed. `Discovery` stores up to 200 signals locally. Only reorders the related list; ties keep YouTube's order.
+- **ListenBrainz.kt:** real HTTP submission (`/1/submit-listens`) with the user's token (kept in `SecureStore`), offline queue, retry. Limit: untested against the live service from this environment.
+- **FrameStep.kt:** exact seeks of one frame (real frame rate when the stream reports it).
+- **QueueStore.kt:** remembers the playing video and queue; the queue sheet offers to restore it.
+- **Origin:** ideas came from two prototype archives (adv yt / yt). Their code was mostly demonstration state (fake cast devices, scrobbles never sent, fixed storage numbers), so it was not copied; these are new implementations of the viable ideas.
+
 ## Testing status
 CI (`build.yml`) compiles the release build and runs the unit tests. No feature in this document has been run on a device.
