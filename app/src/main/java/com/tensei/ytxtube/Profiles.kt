@@ -233,7 +233,7 @@ fun ProfilesSheet(onDismiss: () -> Unit) {
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp),
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
             ) {
-                Backup.ConflictMode.entries.forEach { mode ->
+                Backup.ConflictMode.values().forEach { mode ->
                     androidx.compose.material3.FilterChip(
                         selected = conflictMode == mode,
                         onClick = { conflictMode = mode },
