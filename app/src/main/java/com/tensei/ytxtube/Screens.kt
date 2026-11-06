@@ -387,7 +387,7 @@ fun SubscriptionsScreen(
                             }
                             loadingCommunity -> {
                                 Box(Modifier.fillMaxWidth().padding(top = top + 60.dp), Alignment.Center) {
-                                    CircularProgressIndicator(color = c.primary, strokeWidth = 4.dp, modifier = Modifier.size(36.dp))
+                                    YtxSpinner(color = c.primary, size = 36.dp)
                                 }
                             }
                             channelCommunityPosts.isEmpty() -> {
@@ -623,7 +623,7 @@ fun LibraryScreen(
                         items(history.take(20), key = { "h-" + it.id }) { video -> HistoryCard(video) { onOpen(video) } }
                     }
                     lib.history.loading -> Box(Modifier.fillMaxWidth().padding(24.dp), Alignment.Center) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, strokeWidth = 4.dp, modifier = Modifier.size(28.dp))
+                        YtxSpinner(color = MaterialTheme.colorScheme.primary, size = 28.dp)
                     }
                     else -> Text(
                         lib.history.error ?: "Nothing watched yet.",
@@ -986,7 +986,7 @@ fun SearchScreen(
 
                 if (state.suggestionsLoading && state.suggestions.isEmpty() && matchingHistory.isEmpty()) {
                     Box(Modifier.fillMaxWidth().padding(top = 32.dp), Alignment.Center) {
-                        CircularProgressIndicator(color = c.primary, strokeWidth = 4.dp, modifier = Modifier.size(32.dp))
+                        YtxSpinner(color = c.primary, size = 32.dp)
                     }
                 } else if (state.suggestions.isEmpty() && matchingHistory.isEmpty()) {
                     EmptyState(
@@ -1063,7 +1063,7 @@ fun SearchScreen(
                 }
             }
             state.loading && state.results.isEmpty() -> Box(Modifier.fillMaxWidth().padding(top = 48.dp), Alignment.Center) {
-                CircularProgressIndicator(color = c.primary, strokeWidth = 4.dp, modifier = Modifier.size(36.dp))
+                YtxSpinner(color = c.primary, size = 36.dp)
             }
             state.error != null -> EmptyState(
                 icon = Icons.Rounded.CloudOff,

@@ -455,6 +455,7 @@ fun VideoRow(video: VideoItem, onClick: () -> Unit, trailing: (@Composable () ->
 
 @Composable
 fun ResumeBar(videoId: String, modifier: Modifier = Modifier) {
+    if (Tweaks.hideProgressBars.value) return
     val progress = ResumeStore.progress(videoId) ?: return
     val c = MaterialTheme.colorScheme
     Box(modifier.fillMaxWidth().height(3.dp).background(Color.White.copy(alpha = 0.45f))) {

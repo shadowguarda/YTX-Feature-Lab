@@ -183,7 +183,7 @@ fun SignInScreen(onDone: () -> Unit, onCancel: () -> Unit) {
                     verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
                 ) {
                     if (error == null) {
-                        CircularProgressIndicator(color = c.primary, strokeWidth = 4.dp, modifier = Modifier.size(36.dp))
+                        YtxSpinner(color = c.primary, size = 36.dp)
                         Spacer(Modifier.height(16.dp))
                         Text("Finishing sign-in…", fontWeight = FontWeight.Bold)
                     } else {

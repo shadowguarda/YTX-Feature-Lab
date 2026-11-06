@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /** Where a settings search result leads. */
-enum class SettingTarget { APPEARANCE, GENERAL, STORAGE, AMBIENT, TWEAKS, PRIVACY }
+enum class SettingTarget { APPEARANCE, GENERAL, STORAGE, AMBIENT, TWEAKS, PRIVACY, PROFILES }
 
 /**
  * One searchable setting. [target] is null for options that live inside the video player; those
@@ -59,6 +60,14 @@ private val SettingIndex = listOf(
     SettingEntry("Default speed, captions and skip", "YTX Tweaks", "default speed captions subtitles skip intro playback", SettingTarget.TWEAKS),
     SettingEntry("Start tab", "YTX Tweaks", "start tab home launch page", SettingTarget.TWEAKS),
     SettingEntry("Battery and notification settings", "YTX Tweaks", "battery optimisation background notifications permissions app info debug", SettingTarget.TWEAKS),
+    SettingEntry("UI profiles", "Profiles and backup", "profile preset minimal liquid glass amoled cinematic music look theme custom", SettingTarget.PROFILES),
+    SettingEntry("Accent colour (hex)", "Profiles and backup", "accent colour color hex theme custom primary", SettingTarget.PROFILES),
+    SettingEntry("Back up and restore settings", "Profiles and backup", "backup restore export import copy paste settings theme", SettingTarget.PROFILES),
+    SettingEntry("Subtitle style", "YTX Tweaks", "subtitles captions size colour color outline shadow background font", SettingTarget.TWEAKS),
+    SettingEntry("Loading animation", "YTX Tweaks", "loading spinner animation style speed", SettingTarget.TWEAKS),
+    SettingEntry("Lite mode and battery saver", "YTX Tweaks", "performance lite battery saver reduce motion ambient", SettingTarget.TWEAKS),
+    SettingEntry("Screenshot", "YTX Tweaks", "screenshot capture frame save picture", SettingTarget.TWEAKS),
+    SettingEntry("Icon-only navigation", "YTX Tweaks", "navigation bar labels icons only", SettingTarget.TWEAKS),
     SettingEntry("Lyrics timing", "YTX Tweaks", "lyrics offset sync bluetooth delay timing music", SettingTarget.TWEAKS),
     SettingEntry("Personalised related videos", "YTX Tweaks", "recommendations discovery related personalise personalize for you", SettingTarget.TWEAKS),
     SettingEntry("ListenBrainz scrobbling", "YTX Tweaks", "scrobble listenbrainz listens last.fm music history", SettingTarget.TWEAKS),
@@ -76,13 +85,44 @@ private val SettingIndex = listOf(
     SettingEntry("Lyrics", "In the music player", "lyrics synced music", null),
 )
 
+/** Settings you starred and the ones you opened most recently, kept on the device. */
+object SettingsMemory {
+    private var prefs: android.content.SharedPreferences? = null
+    var favourites by mutableStateOf<Set<String>>(emptySet())
+        private set
+    var recents by mutableStateOf<List<String>>(emptyList())
+        private set
+
+    fun init(context: Context) {
+        val p = context.getSharedPreferences("settings_memory", Context.MODE_PRIVATE).also { prefs = it }
+        favourites = p.getStringSet("fav", emptySet()).orEmpty().toSet()
+        recents = p.getString("recent", "").orEmpty().split('\n').filter { it.isNotBlank() }
+    }
+
+    fun toggleFavourite(title: String) {
+        favourites = if (title in favourites) favourites - title else favourites + title
+        prefs?.edit()?.putStringSet("fav", favourites)?.apply()
+    }
+
+    fun opened(title: String) {
+        recents = (listOf(title) + recents.filter { it != title }).take(5)
+        prefs?.edit()?.putString("recent", recents.joinToString("\n"))?.apply()
+    }
+}
+
 private fun search(query: String): List<SettingEntry> {
     val words = query.lowercase().split(' ').filter { it.isNotBlank() }
-    if (words.isEmpty()) return SettingIndex
-    return SettingIndex.filter { e ->
+    val matches = SettingIndex.filter { e ->
         val hay = (e.title + " " + e.where + " " + e.keywords).lowercase()
         words.all { it in hay }
     }
+    // Starred first, then recently opened, then the rest in their usual order.
+    return matches.sortedWith(
+        compareBy<SettingEntry>({ if (it.title in SettingsMemory.favourites) 0 else 1 }, {
+            val i = SettingsMemory.recents.indexOf(it.title)
+            if (i < 0) Int.MAX_VALUE else i
+        }),
+    )
 }
 
 /** Type a word, get the settings that match it, tap one to jump straight there. */
@@ -109,17 +149,29 @@ fun SettingsSearchSheet(onPick: (SettingTarget) -> Unit, onDismiss: () -> Unit) 
             }
             LazyColumn(Modifier.height(380.dp)) {
                 items(results) { entry ->
-                    Column(
+                    Row(
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
                             .pressable(pressedScale = 0.98f) {
+                                SettingsMemory.opened(entry.title)
                                 if (entry.target != null) onPick(entry.target) else onDismiss()
                             }
-                            .padding(horizontal = 6.dp, vertical = 10.dp),
+                            .padding(horizontal = 6.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(entry.title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                        Text(entry.where, color = c.onSurfaceVariant, fontSize = 12.sp)
+                        Column(Modifier.weight(1f)) {
+                            Text(entry.title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                            val recent = entry.title in SettingsMemory.recents
+                            Text(entry.where + if (recent) " · recent" else "", color = c.onSurfaceVariant, fontSize = 12.sp)
+                        }
+                        val starred = entry.title in SettingsMemory.favourites
+                        Text(
+                            if (starred) "★" else "☆",
+                            color = if (starred) c.primary else c.onSurfaceVariant,
+                            fontSize = 22.sp,
+                            modifier = Modifier.pressable { SettingsMemory.toggleFavourite(entry.title) }.padding(10.dp),
+                        )
                     }
                 }
             }
