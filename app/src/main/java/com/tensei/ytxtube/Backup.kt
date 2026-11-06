@@ -75,6 +75,9 @@ object Backup {
             skipped += plan.skipped
             if (plan.writes.isEmpty()) continue
             val edit = prefs.edit()
+            // Replace means a true snapshot restore: remove stale keys that are absent
+            // from the imported preference file before writing the backup values.
+            if (mode == ConflictMode.Replace) edit.clear()
             for ((key, v) in plan.writes) {
                 when (v) {
                     is Boolean -> edit.putBoolean(key, v)
