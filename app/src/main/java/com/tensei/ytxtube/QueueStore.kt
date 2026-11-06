@@ -43,7 +43,7 @@ object QueueStore {
 
     fun remember(current: VideoItem?, queue: List<VideoItem>) {
         val items = (listOfNotNull(current) + queue).distinctBy { it.id }.take(MAX)
-        if (queue.isEmpty() || items.isEmpty()) return
+        if (queue.isEmpty() || items.isEmpty() || Tweaks.noWatchHistory) return
         saved = items
         val arr = JSONArray()
         items.forEach {

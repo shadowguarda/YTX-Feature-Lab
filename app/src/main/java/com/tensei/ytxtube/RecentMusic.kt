@@ -52,7 +52,7 @@ object RecentMusic {
     }
 
     fun record(video: VideoItem) {
-        if (video.id.isBlank() || video.id.length != 11) return
+        if (video.id.isBlank() || video.id.length != 11 || Tweaks.noWatchHistory) return
         load()
         val fresh = video.copy(localUri = null)
         items = (listOf(fresh) + items.filter { it.id != fresh.id }).take(MAX)

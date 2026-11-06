@@ -39,6 +39,15 @@ class BoolTweak(private val key: String, private val default: Boolean) {
     fun update(v: Boolean) { value = v; Tweaks.prefs?.edit()?.putBoolean(key, v)?.apply() }
 }
 
+/** A persisted text tweak. */
+class StringTweak(private val key: String, private val default: String) {
+    var value by mutableStateOf(default)
+        private set
+
+    fun load(p: SharedPreferences) { value = p.getString(key, default) ?: default }
+    fun update(v: String) { value = v; Tweaks.prefs?.edit()?.putString(key, v)?.apply() }
+}
+
 /** A persisted number tweak. */
 class IntTweak(private val key: String, private val default: Int) {
     var value by mutableIntStateOf(default)
@@ -74,7 +83,39 @@ object Tweaks {
     val haptics = BoolTweak("haptics", true)
     val resume = BoolTweak("resume", true)
 
+    // Playback defaults
+    val defaultSpeedX100 = IntTweak("default_speed_x100", 100)
+    val skipFirstSec = IntTweak("skip_first_sec", 0)
+    val autoCaptions = BoolTweak("auto_captions", false)
+    val captionLang = StringTweak("caption_lang", "en")
+    val cellularCapP = IntTweak("cellular_cap_p", 0)
+    val fullscreenClock = BoolTweak("fullscreen_clock", false)
+
+    // Data and privacy
+    val preload = BoolTweak("preload", true)
+    val incognito = BoolTweak("incognito", false)
+    val pauseSearchHistory = BoolTweak("pause_search_history", false)
+    val pauseWatchHistory = BoolTweak("pause_watch_history", false)
+    val maxAgeDays = IntTweak("max_age_days", 0)
+
+    // Look
+    val startTab = IntTweak("start_tab", 0)
+    val textScale = IntTweak("text_scale", 100)
+    val uiScale = IntTweak("ui_scale", 100)
+    val thumbWidthDp = IntTweak("thumb_width_dp", 140)
+    val titleLines = IntTweak("title_lines", 2)
+    val hideViews = BoolTweak("hide_views", false)
+    val showUploaded = BoolTweak("show_uploaded", false)
+    val hideDuration = BoolTweak("hide_duration", false)
+
+    // Gestures
+    val brightnessSwipe = BoolTweak("brightness_swipe", true)
+    val volumeSwipe = BoolTweak("volume_swipe", true)
+    val pinchZoom = BoolTweak("pinch_zoom", true)
+    val holdSpeedOn = BoolTweak("hold_speed_on", true)
+
     // Watch page
+    val extraCopyButtons = BoolTweak("extra_copy_buttons", true)
     val showShareAtTime = BoolTweak("share_at_time", true)
     val showCopyLink = BoolTweak("copy_link", true)
     val showOpenBrowser = BoolTweak("open_browser", true)
@@ -87,13 +128,60 @@ object Tweaks {
     private val bools = listOf(
         hideShorts, hideLive, hideWatched, remainingTime, haptics, resume, showShareAtTime, showCopyLink,
         showOpenBrowser, showMarkWatched, hideDownload, hideRelated, hideCommentsCard, hideChaptersCard,
+        autoCaptions, fullscreenClock, preload, incognito, pauseSearchHistory, pauseWatchHistory,
+        hideViews, showUploaded, hideDuration, brightnessSwipe, volumeSwipe, pinchZoom, holdSpeedOn, extraCopyButtons,
     )
-    private val ints = listOf(minLengthMin, maxLengthMin, minViewsK, seekStepSec, holdSpeedX10, controlsHideSec, gestureSensitivity, lyricsOffsetMs)
+    private val ints = listOf(minLengthMin, maxLengthMin, minViewsK, seekStepSec, holdSpeedX10, controlsHideSec, gestureSensitivity, lyricsOffsetMs,
+        defaultSpeedX100, skipFirstSec, cellularCapP, maxAgeDays, startTab, textScale, uiScale, thumbWidthDp, titleLines,
+    )
 
     fun init(context: Context) {
         val p = context.getSharedPreferences("tweaks", Context.MODE_PRIVATE).also { prefs = it }
         bools.forEach { it.load(p) }
         ints.forEach { it.load(p) }
+        captionLang.load(p)
+        appContext = context.applicationContext
+    }
+
+    private var appContext: Context? = null
+
+    val noSearchHistory: Boolean get() = incognito.value || pauseSearchHistory.value
+    val noWatchHistory: Boolean get() = incognito.value || pauseWatchHistory.value
+
+    /** True on mobile data (or any metered connection). */
+    fun onMeteredNetwork(): Boolean = runCatching {
+        val cm = appContext?.getSystemService(android.net.ConnectivityManager::class.java)
+        cm?.isActiveNetworkMetered == true
+    }.getOrDefault(false)
+
+    /** The quality to use: the user's choice, lowered to the mobile-data cap when on mobile data. */
+    fun cappedHeight(chosen: Int?): Int? {
+        val cap = cellularCapP.value
+        if (cap <= 0 || !onMeteredNetwork()) return chosen
+        return if (chosen == null || chosen > cap) cap else chosen
+    }
+
+    /** Puts every tweak back to its default. */
+    fun resetAll() {
+        prefs?.edit()?.clear()?.apply()
+        prefs?.let { p ->
+            bools.forEach { it.load(p) }
+            ints.forEach { it.load(p) }
+            captionLang.load(p)
+        }
+    }
+
+    /** Roughly how many days ago a video was uploaded, from text like "3 weeks ago"; null if unknown. */
+    fun ageDays(uploaded: String?): Int? {
+        val m = Regex("(\\d+)\\s+(second|minute|hour|day|week|month|year)", RegexOption.IGNORE_CASE).find(uploaded ?: return null) ?: return null
+        val n = m.groupValues[1].toIntOrNull() ?: return null
+        return when (m.groupValues[2].lowercase()) {
+            "second", "minute", "hour" -> 0
+            "day" -> n
+            "week" -> n * 7
+            "month" -> n * 30
+            else -> n * 365
+        }
     }
 
     val seekStepMs: Long get() = seekStepSec.value * 1000L
@@ -102,7 +190,7 @@ object Tweaks {
 
     val anyFeedFilter: Boolean
         get() = hideShorts.value || hideLive.value || hideWatched.value ||
-            minLengthMin.value > 0 || maxLengthMin.value > 0 || minViewsK.value > 0
+            minLengthMin.value > 0 || maxLengthMin.value > 0 || minViewsK.value > 0 || maxAgeDays.value > 0
 
     /** True when [video] passes every feed filter. Videos with an unknown length are never hidden by length. */
     fun allows(video: VideoItem): Boolean {
@@ -112,6 +200,10 @@ object Tweaks {
             if (hideShorts.value && len <= 60) return false
             if (minLengthMin.value > 0 && len < minLengthMin.value * 60L) return false
             if (maxLengthMin.value > 0 && len > maxLengthMin.value * 60L) return false
+        }
+        if (maxAgeDays.value > 0 && !video.isLive) {
+            val age = ageDays(video.uploaded)
+            if (age != null && age > maxAgeDays.value) return false
         }
         if (minViewsK.value > 0 && video.views > 0 && video.views < minViewsK.value * 1000L) return false
         if (hideWatched.value && Watched.has(video.id)) return false
@@ -179,6 +271,16 @@ fun TweaksSheet(onDismiss: () -> Unit) {
             TweakChoice("Hide videos longer than", Tweaks.maxLengthMin, listOf(0, 30, 60, 120, 240)) { if (it == 0) "Off" else "$it min" }
             TweakChoice("Hide videos with fewer views than", Tweaks.minViewsK, listOf(0, 1, 10, 100, 1000)) { if (it == 0) "Off" else "${it}K" }
 
+            TweakChoice("Hide videos older than", Tweaks.maxAgeDays, listOf(0, 7, 30, 180, 365)) { if (it == 0) "Off" else if (it < 30) "$it days" else if (it < 365) "${it / 30} months" else "1 year" }
+
+            TweakHeader("Playback defaults")
+            TweakChoice("Default speed for new videos", Tweaks.defaultSpeedX100, listOf(75, 100, 125, 150, 175, 200)) { "${it / 100f}x".replace(".0x", "x") }
+            TweakChoice("Skip the first seconds of each video", Tweaks.skipFirstSec, listOf(0, 5, 10, 15, 30)) { if (it == 0) "Off" else "$it s" }
+            TweakSwitch("Turn captions on automatically", "When a video has them in your language", Tweaks.autoCaptions)
+            TweakChoice("Caption language", Tweaks.captionLang, listOf("en", "es", "hi", "fr", "de", "pt", "ja", "ko", "ar", "ru")) { it.uppercase() }
+            TweakChoice("Cap quality on mobile data", Tweaks.cellularCapP, listOf(0, 360, 480, 720, 1080)) { if (it == 0) "Off" else "${it}p" }
+            TweakSwitch("Clock in fullscreen", "Shows the time in the corner", Tweaks.fullscreenClock)
+
             TweakHeader("Player")
             TweakChoice("Double-tap seek", Tweaks.seekStepSec, listOf(5, 10, 15, 20, 30)) { "$it s" }
             TweakChoice("Hold to speed up", Tweaks.holdSpeedX10, listOf(15, 20, 30, 40)) { "${it / 10f}x" }
@@ -202,20 +304,78 @@ fun TweaksSheet(onDismiss: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             )
 
+            TweakHeader("Gestures")
+            TweakSwitch("Brightness swipe", "Left edge in fullscreen", Tweaks.brightnessSwipe)
+            TweakSwitch("Volume swipe", "Right edge in fullscreen", Tweaks.volumeSwipe)
+            TweakSwitch("Pinch to zoom", null, Tweaks.pinchZoom)
+            TweakSwitch("Hold to speed up", null, Tweaks.holdSpeedOn)
+
+            TweakHeader("Look")
+            TweakChoice("Start on", Tweaks.startTab, listOf(0, 1, 2, 3, 4)) { listOf("Home", "Music", "Shorts", "Library", "Saved")[it] }
+            TweakChoice("Text size", Tweaks.textScale, listOf(85, 100, 115, 130)) { "$it%" }
+            TweakChoice("Interface size", Tweaks.uiScale, listOf(90, 100, 110)) { "$it%" }
+            TweakChoice("Video thumbnail width", Tweaks.thumbWidthDp, listOf(110, 140, 170, 200)) { "$it dp" }
+            TweakChoice("Title lines in lists", Tweaks.titleLines, listOf(1, 2, 3)) { "$it" }
+            TweakSwitch("Hide view counts", null, Tweaks.hideViews)
+            TweakSwitch("Show upload date", "In video lists", Tweaks.showUploaded)
+            TweakSwitch("Hide duration badge", null, Tweaks.hideDuration)
+
+            TweakHeader("Data and history")
+            TweakSwitch("Incognito mode", "Nothing is remembered: no search, watch, resume or usage history", Tweaks.incognito)
+            TweakSwitch("Pause search history", null, Tweaks.pauseSearchHistory)
+            TweakSwitch("Pause watch history", "Stops resume positions, watched marks and recent music", Tweaks.pauseWatchHistory)
+            TweakSwitch("Preload upcoming videos", "Resolves the next videos ahead of the tap. Turn off to save data", Tweaks.preload)
+
             TweakHeader("Watch page")
             TweakSwitch("Share at current time button", null, Tweaks.showShareAtTime)
             TweakSwitch("Copy link button", null, Tweaks.showCopyLink)
             TweakSwitch("Open in browser button", null, Tweaks.showOpenBrowser)
             TweakSwitch("Mark as watched button", null, Tweaks.showMarkWatched)
+            TweakSwitch("Copy title, channel link and description buttons", null, Tweaks.extraCopyButtons)
             TweakSwitch("Hide Download button", null, Tweaks.hideDownload)
             TweakSwitch("Hide chapters card", null, Tweaks.hideChaptersCard)
             TweakSwitch("Hide comments card", null, Tweaks.hideCommentsCard)
             TweakSwitch("Hide related videos", null, Tweaks.hideRelated)
 
+            TweakHeader("System")
+            val context = androidx.compose.ui.platform.LocalContext.current
+            SystemLink("App info and permissions") {
+                context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + context.packageName)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+            SystemLink("Notification settings") {
+                val intent = android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                runCatching { context.startActivity(intent) }
+            }
+            SystemLink("Battery optimisation (for background playback)") {
+                runCatching {
+                    context.startActivity(android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                }
+            }
+            SystemLink("Copy debug info") {
+                val info = "YTXTube ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}), Android ${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT}), ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}, ${android.os.Build.SUPPORTED_ABIS.firstOrNull()}"
+                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("Debug info", info))
+            }
+            var confirmReset by remember { mutableStateOf(false) }
+            SystemLink(if (confirmReset) "Tap again to reset every tweak" else "Reset all tweaks") {
+                if (confirmReset) { Tweaks.resetAll(); confirmReset = false } else confirmReset = true
+            }
+
             Spacer(Modifier.height(8.dp))
             Text("Feed filters apply the next time a feed loads or refreshes.", color = c.onSurfaceVariant, fontSize = 12.sp)
         }
     }
+}
+
+@Composable
+private fun SystemLink(title: String, onClick: () -> Unit) {
+    Text(
+        title,
+        color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp,
+        modifier = Modifier.fillMaxWidth().pressable(pressedScale = 0.98f, onClick = onClick).padding(vertical = 11.dp),
+    )
 }
 
 @Composable
@@ -244,6 +404,21 @@ private fun TweakSwitch(title: String, subtitle: String?, checked: Boolean, onCh
 }
 
 @Composable
+private fun TweakChoice(title: String, tweak: StringTweak, options: List<String>, label: (String) -> String) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+        Row(
+            Modifier.horizontalScroll(rememberScrollState()).padding(top = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            options.forEach { option ->
+                FilterChip(selected = tweak.value == option, onClick = { tweak.update(option) }, label = { Text(label(option)) })
+            }
+        }
+    }
+}
+
+@Composable
 private fun TweakChoice(title: String, tweak: IntTweak, options: List<Int>, label: (Int) -> String) {
     Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
@@ -259,5 +434,46 @@ private fun TweakChoice(title: String, tweak: IntTweak, options: List<Int>, labe
                 )
             }
         }
+    }
+}
+
+/** How long you have watched and listened, kept on the device. Shown in Privacy, resettable. */
+object UsageStats {
+    private var prefs: SharedPreferences? = null
+    private var pendingVideo = 0
+    private var pendingMusic = 0
+
+    var videoSeconds by mutableIntStateOf(0)
+        private set
+    var musicSeconds by mutableIntStateOf(0)
+        private set
+
+    fun init(context: Context) {
+        val p = context.getSharedPreferences("usage_stats", Context.MODE_PRIVATE).also { prefs = it }
+        videoSeconds = p.getInt("video", 0)
+        musicSeconds = p.getInt("music", 0)
+    }
+
+    fun tick(music: Boolean) {
+        if (music) { musicSeconds++; pendingMusic++ } else { videoSeconds++; pendingVideo++ }
+        if (pendingVideo + pendingMusic >= 30) {
+            pendingVideo = 0
+            pendingMusic = 0
+            prefs?.edit()?.putInt("video", videoSeconds)?.putInt("music", musicSeconds)?.apply()
+        }
+    }
+
+    fun reset() {
+        videoSeconds = 0
+        musicSeconds = 0
+        pendingVideo = 0
+        pendingMusic = 0
+        prefs?.edit()?.clear()?.apply()
+    }
+
+    fun format(seconds: Int): String {
+        val h = seconds / 3600
+        val m = seconds % 3600 / 60
+        return if (h > 0) "${h} h ${m} min" else "${m} min"
     }
 }

@@ -551,10 +551,16 @@ fun YtxTubeTheme(content: @Composable () -> Unit) {
     } else baseScheme
 
     SystemBars(dark, scheme.surface)
+    val baseDensity = androidx.compose.ui.platform.LocalDensity.current
+    val scaledDensity = androidx.compose.ui.unit.Density(
+        density = baseDensity.density * Tweaks.uiScale.value / 100f,
+        fontScale = baseDensity.fontScale * Tweaks.textScale.value / 100f,
+    )
     MaterialTheme(colorScheme = scheme, shapes = ExpressiveShapes, typography = Typography()) {
         CompositionLocalProvider(
 
             LocalRippleConfiguration provides null,
+            androidx.compose.ui.platform.LocalDensity provides scaledDensity,
 
 
             LocalContentColor provides scheme.onSurface,

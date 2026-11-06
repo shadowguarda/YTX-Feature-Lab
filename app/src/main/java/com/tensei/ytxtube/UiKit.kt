@@ -239,7 +239,7 @@ fun Modifier.prefetchOnPress(videoId: String): Modifier = pointerInput(videoId) 
             }
             @Suppress("UNREACHABLE_CODE") false
         }
-        if (scrolled != true) StreamCache.prefetch(videoId)
+        if (scrolled != true && Tweaks.preload.value) StreamCache.prefetch(videoId)
     }
 }
 
@@ -426,21 +426,21 @@ fun VideoRow(video: VideoItem, onClick: () -> Unit, trailing: (@Composable () ->
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.width(140.dp)) {
+        Box(Modifier.width(Tweaks.thumbWidthDp.value.dp)) {
             Thumbnail(video.thumbnail, Modifier.fillMaxWidth().aspectRatio(16f / 9f), radius = 16)
-            DurationPill(video.durationSec, Modifier.align(Alignment.BottomEnd).padding(6.dp), small = true, isLive = video.isLive)
+            if (!Tweaks.hideDuration.value) DurationPill(video.durationSec, Modifier.align(Alignment.BottomEnd).padding(6.dp), small = true, isLive = video.isLive)
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(rememberDeArrowTitle(video.id, video.title), fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(rememberDeArrowTitle(video.id, video.title), fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 18.sp, maxLines = Tweaks.titleLines.value, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(4.dp))
             val viewsLabel = if (video.isLive) {
                 video.views.takeIf { it >= 0 }?.let { "${formatCount(it)} watching" } ?: "Live"
             } else {
-                video.views.takeIf { it >= 0 }?.let { "${formatCount(it)} views" }
+                video.views.takeIf { it >= 0 && !Tweaks.hideViews.value }?.let { "${formatCount(it)} views" }
             }
             Text(
-                listOfNotNull(video.channel.ifBlank { null }, viewsLabel).joinToString(" · "),
+                listOfNotNull(video.channel.ifBlank { null }, viewsLabel, video.uploaded?.takeIf { Tweaks.showUploaded.value && it.isNotBlank() }).joinToString(" · "),
                 color = c.onSurfaceVariant,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,

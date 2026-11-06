@@ -52,6 +52,13 @@ private val SettingIndex = listOf(
     SettingEntry("Feed filters", "YTX Tweaks", "hide shorts live watched length views filter feed search", SettingTarget.TWEAKS),
     SettingEntry("Seek step, hold speed and controls", "YTX Tweaks", "playback double tap seek hold speed controls hide delay remaining time haptics resume", SettingTarget.TWEAKS),
     SettingEntry("Watch page buttons", "YTX Tweaks", "share copy link browser mark watched download chapters comments related", SettingTarget.TWEAKS),
+    SettingEntry("Incognito and history pausing", "YTX Tweaks", "incognito private history pause search watch resume privacy", SettingTarget.TWEAKS),
+    SettingEntry("Data saver", "YTX Tweaks", "data saver mobile cellular quality cap preload", SettingTarget.TWEAKS),
+    SettingEntry("Text and interface size", "YTX Tweaks", "text size font scale zoom interface appearance accessibility", SettingTarget.TWEAKS),
+    SettingEntry("Video list layout", "YTX Tweaks", "thumbnail size title lines views upload date duration appearance", SettingTarget.TWEAKS),
+    SettingEntry("Default speed, captions and skip", "YTX Tweaks", "default speed captions subtitles skip intro playback", SettingTarget.TWEAKS),
+    SettingEntry("Start tab", "YTX Tweaks", "start tab home launch page", SettingTarget.TWEAKS),
+    SettingEntry("Battery and notification settings", "YTX Tweaks", "battery optimisation background notifications permissions app info debug", SettingTarget.TWEAKS),
     SettingEntry("Lyrics timing", "YTX Tweaks", "lyrics offset sync bluetooth delay timing music", SettingTarget.TWEAKS),
     SettingEntry("Personalised related videos", "YTX Tweaks", "recommendations discovery related personalise personalize for you", SettingTarget.TWEAKS),
     SettingEntry("ListenBrainz scrobbling", "YTX Tweaks", "scrobble listenbrainz listens last.fm music history", SettingTarget.TWEAKS),
@@ -135,6 +142,7 @@ fun PrivacySheet(onDismiss: () -> Unit) {
             ClearRow("Search history", "${SearchHistory.queries.size} searches", SearchHistory.queries.isNotEmpty()) { SearchHistory.clear() }
             ClearRow("Watched videos", "${Watched.count} remembered as watched", Watched.count > 0) { Watched.clear() }
             ClearRow("Resume positions", "${ResumeStore.positions.size} videos with a saved position", ResumeStore.positions.isNotEmpty()) { ResumeStore.clearAll() }
+            ClearRow("Watch time", "Video ${UsageStats.format(UsageStats.videoSeconds)} · Music ${UsageStats.format(UsageStats.musicSeconds)}", UsageStats.videoSeconds + UsageStats.musicSeconds > 0) { UsageStats.reset() }
             ClearRow("Personalisation data", "${Discovery.count} watches used for related videos", Discovery.count > 0) { Discovery.clear() }
             ClearRow("Image and video cache", "Temporary files; they are downloaded again when needed", true) {
                 context.cacheDir.deleteRecursively()

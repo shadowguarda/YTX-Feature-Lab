@@ -256,7 +256,7 @@ fun YtxTubeApp() {
     var shortsEntry by remember { mutableStateOf<VideoItem?>(null) }
     var openAllSubscriptions by remember { mutableStateOf(false) }
     var openSearch by remember { mutableStateOf(false) }
-    var tab by rememberSaveable { mutableStateOf(Tab.Home) }
+    var tab by rememberSaveable { mutableStateOf(Tab.entries.getOrElse(Tweaks.startTab.value) { Tab.Home }) }
 
 
     LaunchedEffect(tab) { if (tab == Tab.Shorts && player.isPlaying) player.togglePlay() }

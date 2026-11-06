@@ -106,7 +106,7 @@ object Discovery {
     }
 
     fun record(video: VideoItem) {
-        if (!enabled || video.id == lastId) return
+        if (!enabled || Tweaks.noWatchHistory || video.id == lastId) return
         lastId = video.id
         val tokens = DiscoveryRanker.tokens(video.title)
         if (tokens.isEmpty() && video.channel.isBlank()) return

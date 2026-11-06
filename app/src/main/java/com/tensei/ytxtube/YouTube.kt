@@ -663,7 +663,7 @@ object StreamSelection {
             MediaFormat.WEBM -> 1
             else -> 2
         }
-        val chosen = QualityPreference.height
+        val chosen = Tweaks.cappedHeight(QualityPreference.height)
 
         // Auto uses the measured throughput, not the link speed: a Wi-Fi link can report
         // hundreds of megabits while the connection behind it cannot feed 4K. A manual
@@ -802,7 +802,7 @@ object StreamSelection {
      * adaptive pair; it is usually capped at 360p/720p.
      */
     fun pickShorts(info: StreamInfo): Picked {
-        val chosen = QualityPreference.height
+        val chosen = Tweaks.cappedHeight(QualityPreference.height)
         val hdr = QualityPreference.hdr && HdrSupport.isSupported
         fun order(): Comparator<VideoStream> =
             compareBy<VideoStream> { it.tier() }

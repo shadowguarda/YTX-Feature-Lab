@@ -47,7 +47,7 @@ object ResumeStore {
     }
 
     fun save(id: String, positionMs: Long, durationMs: Long) {
-        if (id.isBlank() || durationMs <= 0 || durationMs == C.TIME_UNSET) return
+        if (id.isBlank() || durationMs <= 0 || durationMs == C.TIME_UNSET || Tweaks.noWatchHistory) return
         if (positionMs < EDGE_MS || positionMs > durationMs - EDGE_MS) {
             // Near the end means the video was watched; remember that separately.
             if (positionMs >= EDGE_MS && positionMs > durationMs - EDGE_MS) Watched.add(id)
