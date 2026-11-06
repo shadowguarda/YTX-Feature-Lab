@@ -6,6 +6,7 @@ import android.net.ConnectivityManager
 import android.os.Environment
 import android.os.StatFs
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column

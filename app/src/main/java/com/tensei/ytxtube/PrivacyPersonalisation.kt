@@ -332,8 +332,8 @@ fun PrivacyDashboardCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            PrivacyMetricItem("Search History", "${SearchHistory.all.size} queries")
-            PrivacyMetricItem("Resume Store", "${ResumeStore.size} entries")
+            PrivacyMetricItem("Search History", "${SearchHistory.queries.size} queries")
+            PrivacyMetricItem("Resume Store", "${ResumeStore.positions.size} entries")
             PrivacyMetricItem("Blocked Items", "${PrivacyPersonalisation.blockedWords.size + PrivacyPersonalisation.blockedChannels.size} rules")
         }
 

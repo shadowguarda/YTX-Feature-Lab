@@ -364,7 +364,7 @@ fun BentoVideoCard(
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(
-                        text = video.formattedDuration(),
+                        text = formatDuration(video.durationSec * 1000L),
                         color = Color.White,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold
@@ -449,7 +449,7 @@ fun CinemaVideoCard(
                         .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
                     Text(
-                        text = video.formattedDuration(),
+                        text = formatDuration(video.durationSec * 1000L),
                         color = Color.White,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
@@ -497,7 +497,7 @@ fun CinemaVideoCard(
                     )
                     if (!Tweaks.hideViews.value && video.views > 0) {
                         Text(
-                            text = " · ${video.formattedViews()}",
+                            text = " · ${(video.views.takeIf { it > 0 }?.let { formatCount(it) + " views" } ?: "")}",
                             style = MaterialTheme.typography.bodySmall,
                             color = c.onSurfaceVariant
                         )

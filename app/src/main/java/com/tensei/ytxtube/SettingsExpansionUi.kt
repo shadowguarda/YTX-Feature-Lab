@@ -1212,8 +1212,8 @@ fun PrivacyPersonalisationSettingsContent(context: Context) {
         PrivacyDashboardCard(
             onClearAllHistory = {
                 SearchHistory.clear()
-                Watched.clearAll()
-                ResumeStore.clear()
+                Watched.clear()
+                ResumeStore.clearAll()
                 Toast.makeText(context, "All history wiped clean", Toast.LENGTH_SHORT).show()
             }
         )

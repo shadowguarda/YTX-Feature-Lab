@@ -305,7 +305,7 @@ object PlayerEnhancements {
             id = "${videoId}_$posMs",
             videoId = videoId,
             positionMs = posMs,
-            title = title.ifBlank { "Bookmark at ${formatDuration(posMs / 1000)}" }
+            title = title.ifBlank { "Bookmark at ${formatClock(posMs / 1000)}" }
         )
         bookmarks.add(0, bm)
         saveBookmarks()
@@ -451,7 +451,7 @@ object PlayerEnhancements {
     }
 }
 
-private fun formatDuration(sec: Long): String {
+private fun formatClock(sec: Long): String {
     val h = sec / 3600
     val m = (sec % 3600) / 60
     val s = sec % 60

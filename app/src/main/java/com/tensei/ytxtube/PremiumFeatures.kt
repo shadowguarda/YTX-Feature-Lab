@@ -253,7 +253,7 @@ fun NeonWaveLoader(modifier: Modifier = Modifier, color: Color = MaterialTheme.c
 
         for (i in 0 until barCount) {
             val progress = (phase.value + i * 0.25f) % 1f
-            val h = (sin(progress * 3.14159) * size.height).coerceAtLeast(4.dp.toPx())
+            val h = (sin(progress * 3.14159f) * size.height).coerceAtLeast(4.dp.toPx())
             val x = i * (barWidth + gap)
             val y = (size.height - h) / 2f
 
