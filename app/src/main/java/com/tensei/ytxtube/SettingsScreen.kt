@@ -129,6 +129,10 @@ fun SettingsScreen(
     onLabsOpenVideo: (VideoItem) -> Unit = {},
     onLabsOpenChannel: (String) -> Unit = {},
 ) {
+    androidx.compose.runtime.SideEffect {
+        LabsBridge.player = labsPlayer; LabsBridge.lib = labsLibrary
+        LabsBridge.openVideo = onLabsOpenVideo; LabsBridge.openChannel = onLabsOpenChannel
+    }
     val c = MaterialTheme.colorScheme
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -1364,7 +1368,7 @@ private fun GeneralModificationContent(context: Context, autoOpen: String? = nul
             subtitle = "Theme engine, navigation, home feed, player, gestures, music, downloads, privacy and more (experimental)",
             onClick = { showLabs = true },
         )
-        if (showLabs) LabsHubSheet(labsPlayer, labsLibrary, onLabsOpenVideo, onLabsOpenChannel) { showLabs = false }
+        if (showLabs) LabsHubSheet(LabsBridge.player, LabsBridge.lib, LabsBridge.openVideo, LabsBridge.openChannel) { showLabs = false }
         SettingsRow(
             icon = Icons.Rounded.Tune,
             title = "YTX Lab",

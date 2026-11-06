@@ -24,6 +24,14 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 
+/** Hands the live player/library to the Labs sheet, which is opened from a nested settings section. */
+object LabsBridge {
+    var player: PlayerState? = null
+    var lib: LibraryData? = null
+    var openVideo: (VideoItem) -> Unit = {}
+    var openChannel: (String) -> Unit = {}
+}
+
 /** One entry in the Labs hub: a feature area and how to show its settings. */
 private enum class LabArea(val title: String) {
     THEME("Theme engine"), NAV("Navigation"), HOME("Home feed"), PLAYER("Player"),
