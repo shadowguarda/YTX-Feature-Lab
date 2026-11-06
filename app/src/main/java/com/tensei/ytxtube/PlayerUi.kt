@@ -70,6 +70,7 @@ import androidx.compose.material.icons.outlined.ThumbDown
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material.icons.outlined.WatchLater
 import android.content.Intent
+import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Link
@@ -266,7 +267,7 @@ fun PlayerScreen(
         }
         ListenBrainz.listened(item.title, item.channel, item.durationSec)
     }
-    val ambientOn = AmbientSettings.enabled && !isAmoled && !state.isMusicMode
+    val ambientOn = AmbientSettings.enabled && !isAmoled && !state.isMusicMode && !Tweaks.liteActive()
     val ambientFrames = rememberAmbientFrames(active = ambientOn)
     val ambientStatusBarPx = if (AmbientSettings.statusBar) WindowInsets.statusBars.getTop(LocalDensity.current) else 0
     val pageColor = if (isAmoled) Color.Black else c.surface
@@ -490,7 +491,7 @@ fun PlayerScreen(
                 } else if (state.loading) {
                     item(key = "loading") {
                         Box(Modifier.fillMaxWidth().padding(top = 40.dp), Alignment.Center) {
-                            CircularProgressIndicator(color = c.primary, strokeWidth = 4.dp, modifier = Modifier.size(32.dp))
+                            YtxSpinner(color = c.primary, size = 32.dp)
                         }
                     }
                 }
@@ -765,6 +766,15 @@ private fun PlayerActions(state: PlayerState) {
             ) {
                 runCatching {
                     context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com/watch?v=${item.id}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                }
+            }
+            if (Tweaks.showScreenshotButton.value && !state.isMusicMode) {
+                val shotScope = androidx.compose.runtime.rememberCoroutineScope()
+                ActionPill(
+                    icon = Icons.Rounded.PhotoCamera, label = "Screenshot", active = false, flourish = Flourish.Pop,
+                    shape = RoundedCornerShape(18.dp), description = "Save the current frame",
+                ) {
+                    shotScope.launch { state.actionMessage = Screenshot.capture(context, item.title) }
                 }
             }
             if (Tweaks.extraCopyButtons.value) {

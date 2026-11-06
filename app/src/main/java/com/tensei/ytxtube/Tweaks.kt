@@ -2,7 +2,9 @@ package com.tensei.ytxtube
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -108,6 +110,21 @@ object Tweaks {
     val showUploaded = BoolTweak("show_uploaded", false)
     val hideDuration = BoolTweak("hide_duration", false)
 
+    // Subtitles, loading, performance
+    val captionSize = IntTweak("caption_size", 15)
+    val captionColor = StringTweak("caption_color", "white")
+    val captionBgAlpha = IntTweak("caption_bg_alpha", 72)
+    val captionOutline = BoolTweak("caption_outline", false)
+    val captionShadow = BoolTweak("caption_shadow", false)
+    val captionBold = BoolTweak("caption_bold", true)
+    val spinnerStyle = StringTweak("spinner_style", "ring")
+    val spinnerSpeed = IntTweak("spinner_speed", 100)
+    val autoBatterySaver = BoolTweak("auto_battery_saver", true)
+    val liteMode = BoolTweak("lite_mode", false)
+    val hideProgressBars = BoolTweak("hide_progress", false)
+    val iconOnlyNav = BoolTweak("icon_only_nav", false)
+    val showScreenshotButton = BoolTweak("screenshot_button", true)
+
     // Gestures
     val brightnessSwipe = BoolTweak("brightness_swipe", true)
     val volumeSwipe = BoolTweak("volume_swipe", true)
@@ -130,9 +147,11 @@ object Tweaks {
         showOpenBrowser, showMarkWatched, hideDownload, hideRelated, hideCommentsCard, hideChaptersCard,
         autoCaptions, fullscreenClock, preload, incognito, pauseSearchHistory, pauseWatchHistory,
         hideViews, showUploaded, hideDuration, brightnessSwipe, volumeSwipe, pinchZoom, holdSpeedOn, extraCopyButtons,
+        captionOutline, captionShadow, captionBold, autoBatterySaver, liteMode, hideProgressBars, iconOnlyNav, showScreenshotButton,
     )
     private val ints = listOf(minLengthMin, maxLengthMin, minViewsK, seekStepSec, holdSpeedX10, controlsHideSec, gestureSensitivity, lyricsOffsetMs,
         defaultSpeedX100, skipFirstSec, cellularCapP, maxAgeDays, startTab, textScale, uiScale, thumbWidthDp, titleLines,
+        captionSize, captionBgAlpha, spinnerSpeed,
     )
 
     fun init(context: Context) {
@@ -140,10 +159,19 @@ object Tweaks {
         bools.forEach { it.load(p) }
         ints.forEach { it.load(p) }
         captionLang.load(p)
+        captionColor.load(p)
+        spinnerStyle.load(p)
         appContext = context.applicationContext
     }
 
     private var appContext: Context? = null
+
+    /** True when the heavy visual extras (ambient light, fullscreen fill) should stay off. */
+    fun liteActive(): Boolean {
+        if (liteMode.value) return true
+        if (!autoBatterySaver.value) return false
+        return runCatching { appContext?.getSystemService(android.os.PowerManager::class.java)?.isPowerSaveMode == true }.getOrDefault(false)
+    }
 
     val noSearchHistory: Boolean get() = incognito.value || pauseSearchHistory.value
     val noWatchHistory: Boolean get() = incognito.value || pauseWatchHistory.value
@@ -168,6 +196,8 @@ object Tweaks {
             bools.forEach { it.load(p) }
             ints.forEach { it.load(p) }
             captionLang.load(p)
+            captionColor.load(p)
+            spinnerStyle.load(p)
         }
     }
 
@@ -319,6 +349,36 @@ fun TweaksSheet(onDismiss: () -> Unit) {
             TweakSwitch("Hide view counts", null, Tweaks.hideViews)
             TweakSwitch("Show upload date", "In video lists", Tweaks.showUploaded)
             TweakSwitch("Hide duration badge", null, Tweaks.hideDuration)
+            TweakSwitch("Hide progress bars", "The red resume bar on thumbnails", Tweaks.hideProgressBars)
+            TweakSwitch("Icon-only navigation", "No labels under the bottom bar icons", Tweaks.iconOnlyNav)
+
+            TweakHeader("Subtitles")
+            TweakChoice("Subtitle size", Tweaks.captionSize, listOf(12, 15, 18, 22, 26)) { "$it" }
+            TweakChoice("Subtitle colour", Tweaks.captionColor, listOf("white", "yellow", "cyan", "green", "pink")) { it.replaceFirstChar { c -> c.uppercase() } }
+            TweakChoice("Subtitle background", Tweaks.captionBgAlpha, listOf(0, 25, 50, 72, 90)) { if (it == 0) "None" else "$it%" }
+            TweakSwitch("Outline", "A dark edge around each letter", Tweaks.captionOutline)
+            TweakSwitch("Drop shadow", null, Tweaks.captionShadow)
+            TweakSwitch("Bold", null, Tweaks.captionBold)
+            Text(
+                "This is how subtitles will look",
+                color = captionColorOf(Tweaks.captionColor.value),
+                fontSize = Tweaks.captionSize.value.sp,
+                fontWeight = if (Tweaks.captionBold.value) FontWeight.SemiBold else FontWeight.Normal,
+                modifier = Modifier.padding(top = 6.dp)
+                    .androidxBackground(Tweaks.captionBgAlpha.value / 100f)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+
+            TweakHeader("Loading animation")
+            TweakChoice("Style", Tweaks.spinnerStyle, SpinnerStyles) { spinnerLabel(it) }
+            TweakChoice("Speed", Tweaks.spinnerSpeed, listOf(50, 100, 150, 200)) { "${it / 100f}x".replace(".0x", "x") }
+            Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                SpinnerStyles.forEach { style -> YtxSpinner(MaterialTheme.colorScheme.primary, 30.dp, style = style) }
+            }
+
+            TweakHeader("Performance")
+            TweakSwitch("Lite mode", "Turns off ambient light and reduces motion", Tweaks.liteMode)
+            TweakSwitch("Follow battery saver", "Same as lite mode while Android battery saver is on", Tweaks.autoBatterySaver)
 
             TweakHeader("Data and history")
             TweakSwitch("Incognito mode", "Nothing is remembered: no search, watch, resume or usage history", Tweaks.incognito)
@@ -332,6 +392,7 @@ fun TweaksSheet(onDismiss: () -> Unit) {
             TweakSwitch("Open in browser button", null, Tweaks.showOpenBrowser)
             TweakSwitch("Mark as watched button", null, Tweaks.showMarkWatched)
             TweakSwitch("Copy title, channel link and description buttons", null, Tweaks.extraCopyButtons)
+            TweakSwitch("Screenshot button", "Saves the current frame to Pictures (Android 10+)", Tweaks.showScreenshotButton)
             TweakSwitch("Hide Download button", null, Tweaks.hideDownload)
             TweakSwitch("Hide chapters card", null, Tweaks.hideChaptersCard)
             TweakSwitch("Hide comments card", null, Tweaks.hideCommentsCard)
@@ -368,6 +429,17 @@ fun TweaksSheet(onDismiss: () -> Unit) {
         }
     }
 }
+
+fun captionColorOf(name: String): androidx.compose.ui.graphics.Color = when (name) {
+    "yellow" -> androidx.compose.ui.graphics.Color(0xFFFFE94A)
+    "cyan" -> androidx.compose.ui.graphics.Color(0xFF4DE8FF)
+    "green" -> androidx.compose.ui.graphics.Color(0xFF6BFF8E)
+    "pink" -> androidx.compose.ui.graphics.Color(0xFFFF7BC8)
+    else -> androidx.compose.ui.graphics.Color.White
+}
+
+private fun Modifier.androidxBackground(alpha: Float): Modifier =
+    this.then(Modifier.background(androidx.compose.ui.graphics.Color.Black.copy(alpha = alpha), RoundedCornerShape(7.dp)))
 
 @Composable
 private fun SystemLink(title: String, onClick: () -> Unit) {

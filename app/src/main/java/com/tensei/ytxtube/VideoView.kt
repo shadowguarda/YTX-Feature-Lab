@@ -454,7 +454,7 @@ fun VideoContent(
                 .transformable(state = zoomState),
         ) {
             // Fullscreen on a screen the video does not fill: light the black bands with its colours.
-            val fillBands = fullscreen && AmbientSettings.enabled && AmbientSettings.fillBands && !state.zoomToFill
+            val fillBands = fullscreen && AmbientSettings.enabled && !Tweaks.liteActive() && AmbientSettings.fillBands && !state.zoomToFill
             val fillFrames = rememberAmbientFrames(active = fillBands)
             if (fillBands && fillFrames.current != null) {
                 androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) { drawAmbientFill(fillFrames) }
@@ -1490,20 +1490,40 @@ private const val SeekStepMs = 10_000L
 /** YouTube-style caption plate: black rounded box, white centred text, no chrome. */
 @Composable
 private fun CaptionOverlay(text: String, modifier: Modifier = Modifier) {
+    val size = Tweaks.captionSize.value.sp
+    val weight = if (Tweaks.captionBold.value) FontWeight.SemiBold else FontWeight.Normal
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(7.dp))
-            .background(Color.Black.copy(alpha = 0.72f))
+            .background(Color.Black.copy(alpha = Tweaks.captionBgAlpha.value / 100f))
             .padding(horizontal = 10.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center,
     ) {
+        if (Tweaks.captionOutline.value) {
+            Text(
+                text = text,
+                color = Color.Black,
+                fontSize = size,
+                lineHeight = size * 1.33f,
+                fontWeight = weight,
+                textAlign = TextAlign.Center,
+                style = androidx.compose.ui.text.TextStyle(
+                    drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 5f, join = androidx.compose.ui.graphics.StrokeJoin.Round),
+                ),
+            )
+        }
         Text(
             text = text,
-            color = Color.White,
-            fontSize = 15.sp,
-            lineHeight = 20.sp,
-            fontWeight = FontWeight.SemiBold,
+            color = captionColorOf(Tweaks.captionColor.value),
+            fontSize = size,
+            lineHeight = size * 1.33f,
+            fontWeight = weight,
             textAlign = TextAlign.Center,
+            style = if (Tweaks.captionShadow.value) {
+                androidx.compose.ui.text.TextStyle(
+                    shadow = androidx.compose.ui.graphics.Shadow(Color.Black, androidx.compose.ui.geometry.Offset(2f, 2f), 6f),
+                )
+            } else androidx.compose.ui.text.TextStyle.Default,
         )
     }
 }

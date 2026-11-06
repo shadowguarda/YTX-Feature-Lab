@@ -51,11 +51,12 @@ object Motion {
 @Composable
 fun rememberReducedMotion(): Boolean {
     val context = LocalContext.current
-    return remember(context) {
+    val systemOff = remember(context) {
         runCatching {
             Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
         }.getOrDefault(1f) == 0f
     }
+    return systemOff || Tweaks.liteMode.value
 }
 
 /** YouTube-ish blue, visible on light, dark and video surfaces. */

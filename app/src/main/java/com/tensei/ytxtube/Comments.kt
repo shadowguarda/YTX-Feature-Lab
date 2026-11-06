@@ -319,7 +319,7 @@ fun CommentsCard(state: CommentsState, onOpen: () -> Unit, live: Boolean = false
                         modifier = Modifier.weight(1f),
                     )
                 }
-                state.loading -> CircularProgressIndicator(color = c.primary, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
+                state.loading -> YtxSpinner(color = c.primary, size = 16.dp)
                 state.error != null -> Text(state.error.orEmpty(), color = c.onSurfaceVariant, fontSize = 12.sp)
                 else -> Text(if (Account.signedIn) "No comments yet. Add the first one." else "No comments yet.", color = c.onSurfaceVariant, fontSize = 12.sp)
             }
@@ -463,7 +463,7 @@ fun CommentsPanel(
                 }
                 if (state.loading || state.hasMore) item {
                     Box(Modifier.fillMaxWidth().padding(20.dp), Alignment.Center) {
-                        CircularProgressIndicator(color = c.primary, strokeWidth = 3.dp, modifier = Modifier.size(26.dp))
+                        YtxSpinner(color = c.primary, size = 26.dp)
                     }
                 }
                 if (!state.loading && state.comments.isEmpty()) item {
@@ -544,7 +544,7 @@ private fun Composer(state: CommentsState) {
                     .background(if (canSend) c.primary else c.surfaceContainerHighest),
                 contentAlignment = Alignment.Center,
             ) {
-                if (state.posting) CircularProgressIndicator(color = c.onPrimary, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+                if (state.posting) YtxSpinner(color = c.onPrimary, size = 18.dp)
                 else Icon(Icons.AutoMirrored.Rounded.Send, "Post", tint = if (canSend) c.onPrimary else c.onSurfaceVariant, modifier = Modifier.size(20.dp))
             }
         }
@@ -649,7 +649,7 @@ private fun CommentRow(
                     )
                     if (busy) {
                         Spacer(Modifier.width(8.dp))
-                        CircularProgressIndicator(color = c.primary, strokeWidth = 2.dp, modifier = Modifier.size(14.dp))
+                        YtxSpinner(color = c.primary, size = 14.dp)
                     }
                 }
             }

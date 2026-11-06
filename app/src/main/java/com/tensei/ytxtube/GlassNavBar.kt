@@ -443,7 +443,7 @@ fun RowScope.LiquidNavTab(tab: Tab, selected: Boolean, onClick: () -> Unit) {
         }
 
 
-        BasicText(
+        if (!Tweaks.iconOnlyNav.value) BasicText(
             text = tab.label,
             modifier = Modifier.fillMaxWidth(),
             style = TextStyle(

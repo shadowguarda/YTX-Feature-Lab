@@ -260,7 +260,7 @@ fun FeedList(
             }
             feed.loading || feed.hasMore -> item {
                 Box(Modifier.fillMaxWidth().padding(28.dp), Alignment.Center) {
-                    CircularProgressIndicator(color = c.primary, strokeWidth = 4.dp, modifier = Modifier.size(32.dp))
+                    YtxSpinner(color = c.primary, size = 32.dp)
                 }
             }
         }

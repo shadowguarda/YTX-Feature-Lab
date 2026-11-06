@@ -317,6 +317,7 @@ fun SettingsScreen(
                         SettingTarget.STORAGE -> activeFloatingSection = SettingsFloatingSection.STORAGE_USAGE
                         SettingTarget.AMBIENT -> { generalAutoOpen = "ambient"; activeFloatingSection = SettingsFloatingSection.GENERAL_MODS }
                         SettingTarget.TWEAKS -> { generalAutoOpen = "tweaks"; activeFloatingSection = SettingsFloatingSection.GENERAL_MODS }
+                        SettingTarget.PROFILES -> { generalAutoOpen = "profiles"; activeFloatingSection = SettingsFloatingSection.GENERAL_MODS }
                         SettingTarget.PRIVACY -> showPrivacy = true
                     }
                 },
@@ -1283,8 +1284,10 @@ private fun GeneralModificationContent(context: Context, autoOpen: String? = nul
     var showChannelDialog by remember { mutableStateOf(false) }
     var showAmbientSheet by remember { mutableStateOf(false) }
     var showTweaksSheet by remember { mutableStateOf(false) }
+    var showProfiles by remember { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(autoOpen) {
         when (autoOpen) {
+            "profiles" -> showProfiles = true
             "ambient" -> showAmbientSheet = true
             "tweaks" -> showTweaksSheet = true
         }
@@ -1343,6 +1346,13 @@ private fun GeneralModificationContent(context: Context, autoOpen: String? = nul
             onClick = { showTweaksSheet = true },
         )
         if (showTweaksSheet) TweaksSheet(onDismiss = { showTweaksSheet = false })
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "Profiles and backup",
+            subtitle = "Look presets, your own profiles, accent colour, copy and restore settings",
+            onClick = { showProfiles = true },
+        )
+        if (showProfiles) ProfilesSheet(onDismiss = { showProfiles = false })
         SettingsRow(
             icon = Icons.Rounded.Tune,
             title = "YTX Lab",

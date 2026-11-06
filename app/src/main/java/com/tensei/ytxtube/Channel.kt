@@ -322,7 +322,7 @@ fun ChannelScreen(
                 action = { PillButton("Try again", state::load) },
             ) }
             d == null -> Box(Modifier.fillMaxWidth().padding(top = top + 60.dp), Alignment.Center) {
-                CircularProgressIndicator(color = c.primary, strokeWidth = 4.dp, modifier = Modifier.size(36.dp))
+                YtxSpinner(color = c.primary, size = 36.dp)
             }
             else -> LazyColumn(state = list, contentPadding = contentPadding.withTop(top)) {
                 item(key = "header") {
@@ -371,7 +371,7 @@ fun ChannelScreen(
                         }
                         if (state.loading || state.hasMore) item {
                             Box(Modifier.fillMaxWidth().padding(28.dp), Alignment.Center) {
-                                CircularProgressIndicator(color = c.primary, strokeWidth = 4.dp, modifier = Modifier.size(32.dp))
+                                YtxSpinner(color = c.primary, size = 32.dp)
                             }
                         }
                     }
@@ -379,7 +379,7 @@ fun ChannelScreen(
                         if (state.shortsLoading && state.shorts.isEmpty()) {
                             item {
                                 Box(Modifier.fillMaxWidth().padding(48.dp), Alignment.Center) {
-                                    CircularProgressIndicator(color = c.primary, strokeWidth = 4.dp, modifier = Modifier.size(32.dp))
+                                    YtxSpinner(color = c.primary, size = 32.dp)
                                 }
                             }
                         } else if (state.shorts.isEmpty()) {
@@ -396,7 +396,7 @@ fun ChannelScreen(
                             }
                             if (state.shortsLoading) item {
                                 Box(Modifier.fillMaxWidth().padding(28.dp), Alignment.Center) {
-                                    CircularProgressIndicator(color = c.primary, strokeWidth = 4.dp, modifier = Modifier.size(32.dp))
+                                    YtxSpinner(color = c.primary, size = 32.dp)
                                 }
                             }
                         }
@@ -405,7 +405,7 @@ fun ChannelScreen(
                         if (state.liveLoading) {
                             item {
                                 Box(Modifier.fillMaxWidth().padding(48.dp), Alignment.Center) {
-                                    CircularProgressIndicator(color = c.primary, strokeWidth = 4.dp, modifier = Modifier.size(32.dp))
+                                    YtxSpinner(color = c.primary, size = 32.dp)
                                 }
                             }
                         } else if (state.liveVideos.isEmpty()) {
@@ -426,7 +426,7 @@ fun ChannelScreen(
                         if (state.communityLoading) {
                             item {
                                 Box(Modifier.fillMaxWidth().padding(48.dp), Alignment.Center) {
-                                    CircularProgressIndicator(color = c.primary, strokeWidth = 4.dp, modifier = Modifier.size(32.dp))
+                                    YtxSpinner(color = c.primary, size = 32.dp)
                                 }
                             }
                         } else if (state.communityPosts.isEmpty()) {
