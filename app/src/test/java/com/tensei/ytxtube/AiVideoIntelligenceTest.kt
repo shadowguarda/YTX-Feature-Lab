@@ -60,7 +60,7 @@ class AiVideoIntelligenceTest {
     fun searchesTranscriptByKeyword() {
         val hits = AiTranscriptIntelligence.searchTranscript(sampleCues, "unidirectional")
         assertEquals(1, hits.size)
-        assertEquals(0L, hits.first().timeMs)
+        assertEquals(4_000L, hits.first().timeMs)
     }
 
     @Test

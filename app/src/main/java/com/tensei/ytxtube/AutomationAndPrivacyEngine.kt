@@ -138,11 +138,10 @@ object AutomationLogic {
     fun selectAutoPresetForVideo(video: VideoItem): String {
         val topic = AiTranscriptIntelligence.classifyTopic(video.title).primaryTopic
         return when {
-            isMusicTrack(video) -> "standard"
             (topic == "Education & Lectures" || topic == "Software & Coding") && video.durationSec >= 600L -> "lecture"
             topic == "Design & Creative" || video.title.contains("4k", ignoreCase = true) || video.title.contains("hdr", ignoreCase = true) -> "cinema"
             video.title.contains("podcast", ignoreCase = true) || video.title.contains("interview", ignoreCase = true) -> "podcast"
-            else -> "standard"
+            else -> "standard" // includes music: isMusicTrack() is too broad (any 1-12 min video) to gate on
         }
     }
 
