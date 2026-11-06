@@ -3,6 +3,7 @@ package com.tensei.ytxtube
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Environment
+import androidx.compose.ui.graphics.Color
 import android.os.StatFs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll

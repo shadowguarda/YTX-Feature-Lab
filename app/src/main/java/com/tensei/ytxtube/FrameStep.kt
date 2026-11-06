@@ -15,6 +15,9 @@ object FrameStep {
     var enabled by mutableStateOf(false)
         private set
 
+    /** Nominal frames per step, shown in the UI; step() always advances one frame. */
+    val stepFrames: Int = 1
+
     fun toggle(): Boolean {
         enabled = !enabled
         PlayerBridge.exo?.setSeekParameters(if (enabled) SeekParameters.EXACT else SeekParameters.DEFAULT)

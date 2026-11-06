@@ -59,7 +59,7 @@ import java.util.Calendar
  * 110. Smart storage management
  */
 
-enum class DownloadPriority(val label: String, val weight: Int) {
+enum class AdvDownloadPriority(val label: String, val weight: Int) {
     High("High Priority", 3),
     Normal("Normal", 2),
     Low("Low Priority", 1)
@@ -100,7 +100,7 @@ object DownloadManagerAdvanced {
     private var prefs: SharedPreferences? = null
 
     // 97. Priority mapping per task key
-    val taskPriorities = mutableMapOf<String, DownloadPriority>()
+    val taskPriorities = mutableMapOf<String, AdvDownloadPriority>()
 
     // 98. Max Simultaneous Downloads (1 to 4)
     var maxSimultaneousDownloads by mutableIntStateOf(2)
@@ -185,12 +185,12 @@ object DownloadManagerAdvanced {
     }
 
     // 97. Set task priority
-    fun setPriority(taskKey: String, priority: DownloadPriority) {
+    fun setPriority(taskKey: String, priority: AdvDownloadPriority) {
         taskPriorities[taskKey] = priority
     }
 
-    fun getPriority(taskKey: String): DownloadPriority =
-        taskPriorities[taskKey] ?: DownloadPriority.Normal
+    fun getPriority(taskKey: String): AdvDownloadPriority =
+        taskPriorities[taskKey] ?: AdvDownloadPriority.Normal
 
     // 100. Can download now based on Wi-Fi and schedule
     fun isDownloadAllowedNow(context: Context): Boolean {

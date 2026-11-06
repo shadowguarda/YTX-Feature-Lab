@@ -64,7 +64,7 @@ import kotlin.math.sin
  */
 
 // --- 1. Six Selectable Loading Animations ---
-enum class LoadingAnimationStyle(val label: String) {
+enum class PremiumLoadingStyle(val label: String) {
     LiquidRing("Liquid Glass Ring"),
     DualPulse("Dual Neon Pulse"),
     NeonWave("Neon Oscillating Wave"),
@@ -93,7 +93,7 @@ object PremiumFeatures {
     private var prefs: SharedPreferences? = null
 
     // 1. Loading Animation Style
-    var loadingStyle by mutableStateOf(LoadingAnimationStyle.LiquidRing)
+    var loadingStyle by mutableStateOf(PremiumLoadingStyle.LiquidRing)
         private set
 
     // 5. Performance Settings
@@ -115,8 +115,8 @@ object PremiumFeatures {
     fun init(context: Context) {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).also { prefs = it }
 
-        val animName = p.getString("loading_style", LoadingAnimationStyle.LiquidRing.name)
-        loadingStyle = runCatching { LoadingAnimationStyle.valueOf(animName ?: "") }.getOrDefault(LoadingAnimationStyle.LiquidRing)
+        val animName = p.getString("loading_style", PremiumLoadingStyle.LiquidRing.name)
+        loadingStyle = runCatching { PremiumLoadingStyle.valueOf(animName ?: "") }.getOrDefault(PremiumLoadingStyle.LiquidRing)
 
         autoBlurReduction = p.getBoolean("auto_blur_red", true)
         batteryAwareAnimations = p.getBoolean("battery_aware", true)
@@ -125,7 +125,7 @@ object PremiumFeatures {
         updateMemoryStats(context)
     }
 
-    fun updateLoadingStyle(style: LoadingAnimationStyle) {
+    fun updateLoadingStyle(style: PremiumLoadingStyle) {
         loadingStyle = style
         prefs?.edit()?.putString("loading_style", style.name)?.apply()
     }
@@ -175,12 +175,12 @@ fun AppLoadingIndicator(
     color: Color = MaterialTheme.colorScheme.primary
 ) {
     when (PremiumFeatures.loadingStyle) {
-        LoadingAnimationStyle.LiquidRing -> LiquidRingLoader(modifier.size(size), color)
-        LoadingAnimationStyle.DualPulse -> DualPulseLoader(modifier.size(size), color)
-        LoadingAnimationStyle.NeonWave -> NeonWaveLoader(modifier.size(size), color)
-        LoadingAnimationStyle.GeometricOrbit -> GeometricOrbitLoader(modifier.size(size), color)
-        LoadingAnimationStyle.CyberDots -> CyberDotsLoader(modifier.size(size), color)
-        LoadingAnimationStyle.ShimmerBar -> ShimmerBarLoader(modifier.size(size), color)
+        PremiumLoadingStyle.LiquidRing -> LiquidRingLoader(modifier.size(size), color)
+        PremiumLoadingStyle.DualPulse -> DualPulseLoader(modifier.size(size), color)
+        PremiumLoadingStyle.NeonWave -> NeonWaveLoader(modifier.size(size), color)
+        PremiumLoadingStyle.GeometricOrbit -> GeometricOrbitLoader(modifier.size(size), color)
+        PremiumLoadingStyle.CyberDots -> CyberDotsLoader(modifier.size(size), color)
+        PremiumLoadingStyle.ShimmerBar -> ShimmerBarLoader(modifier.size(size), color)
     }
 }
 

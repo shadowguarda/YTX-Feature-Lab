@@ -677,7 +677,7 @@ object PrivacySecurityCenter {
         when (id) {
             "sponsorblock" -> SponsorBlock.updateEnabled(enabled)
             "dearrow" -> DeArrow.updateEnabled(enabled)
-            "ryd" -> ReturnDislike.updateEnabled(enabled)
+            "ryd" -> ReturnDislike.set(enabled)
             "listenbrainz" -> ListenBrainz.updateEnabled(enabled)
             "ai_provider" -> AiIntelligenceSettings.updateProvider(
                 mode = if (enabled) AiIntelligenceSettings.providerMode else AiProviderMode.OnDevice,

@@ -1,5 +1,6 @@
 package com.tensei.ytxtube
 
+import androidx.compose.foundation.clickable
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.foundation.background

@@ -1337,7 +1337,7 @@ fun PremiumExperienceSettingsContent(context: Context) {
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            LoadingAnimationStyle.entries.forEach { style ->
+            PremiumLoadingStyle.entries.forEach { style ->
                 FilterChip(
                     selected = PremiumFeatures.loadingStyle == style,
                     onClick = { PremiumFeatures.updateLoadingStyle(style) },
