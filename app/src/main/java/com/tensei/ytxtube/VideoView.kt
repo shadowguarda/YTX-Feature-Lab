@@ -186,7 +186,7 @@ fun VideoContent(
     LaunchedEffect(controlsVisible, state.isPlaying, touchedAt) {
         // A TV remote has no way to bring hidden controls back on its own, so they stay up.
         if (controlsVisible && state.isPlaying && !TvMode.isTv) {
-            delay(Motion.ControlsHideMs)
+            delay(Tweaks.controlsHideMs)
             controlsVisible = false
         }
     }
@@ -225,7 +225,7 @@ fun VideoContent(
     val currentInactiveTap by androidx.compose.runtime.rememberUpdatedState(onInactiveTap)
     fun toggleControls() { controlsVisible = !controlsVisible; touched() }
     fun seekStep(side: Int) {
-        val moved = state.seekBy(side * SeekStepMs)
+        val moved = state.seekBy(side * Tweaks.seekStepMs)
         burstSeconds += ((abs(moved) + 500) / 1000).toInt()
         burstTaps++
     }
@@ -906,7 +906,8 @@ fun AudioOnlyStage(
                     else SkippedNote(state, Modifier)
                 }
                 Text(
-                    formatDuration(state.durationMs), color = c.onSurfaceVariant, fontSize = 12.5.sp, fontWeight = FontWeight.ExtraBold,
+                    if (Tweaks.remainingTime.value) "-" + formatDuration((state.durationMs - (scrubPreview ?: state.positionMs)).coerceAtLeast(0L)) else formatDuration(state.durationMs),
+                    color = c.onSurfaceVariant, fontSize = 12.5.sp, fontWeight = FontWeight.ExtraBold,
                     textAlign = androidx.compose.ui.text.style.TextAlign.End, modifier = time,
                 )
             }
@@ -973,7 +974,7 @@ fun FullscreenPlayer(state: PlayerState, onExit: () -> Unit) {
 @Composable
 private fun HoldSpeedPill(modifier: Modifier = Modifier) {
     Text(
-        "2×",
+        "${Tweaks.holdSpeed.toString().removeSuffix(".0")}×",
         color = Color.White,
         fontSize = 13.sp,
         fontWeight = FontWeight.Black,

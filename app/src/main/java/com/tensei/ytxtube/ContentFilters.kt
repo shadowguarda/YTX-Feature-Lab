@@ -60,6 +60,7 @@ object ContentFilters {
         raw.split(',', '\n').map { it.trim() }.filter { it.isNotEmpty() }.distinctBy { it.lowercase() }
 
     fun allows(video: VideoItem): Boolean {
+        if (!Tweaks.allows(video)) return false
         if (keywords.isNotEmpty()) {
             val title = video.title.lowercase()
             if (keywords.any { title.contains(it.lowercase()) }) return false
@@ -69,7 +70,7 @@ object ContentFilters {
     }
 
     fun filter(list: List<VideoItem>): List<VideoItem> =
-        if (keywords.isEmpty() && channels.isEmpty()) list else list.filter(::allows)
+        if (keywords.isEmpty() && channels.isEmpty() && !Tweaks.anyFeedFilter) list else list.filter(::allows)
 }
 
 /** A small editor for a comma separated list. */

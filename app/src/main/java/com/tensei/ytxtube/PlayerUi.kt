@@ -70,6 +70,10 @@ import androidx.compose.material.icons.outlined.ThumbDown
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material.icons.outlined.WatchLater
 import android.content.Intent
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.OpenInBrowser
+import androidx.compose.material.icons.rounded.CheckCircle
 import android.widget.Toast
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Download
@@ -432,15 +436,15 @@ fun PlayerScreen(
                         PlayerActions(state)
                         VoteBar(item.id, Modifier.padding(top = 10.dp))
                         QueueCard(state, onOpen = { state.sheet = PlayerSheet.Queue })
-                        ChaptersCard(state, onOpen = { state.sheet = PlayerSheet.Chapters })
-                        CommentsCard(
+                        if (!Tweaks.hideChaptersCard.value) ChaptersCard(state, onOpen = { state.sheet = PlayerSheet.Chapters })
+                        if (!Tweaks.hideCommentsCard.value) CommentsCard(
                             state.comments,
                             onOpen = { state.sheet = PlayerSheet.Comments },
                             live = isLiveStream,
                         )
                     }
                 }
-                val related = details?.related.orEmpty()
+                val related = if (Tweaks.hideRelated.value) emptyList() else details?.related.orEmpty()
                 if (related.isNotEmpty()) {
                     item(key = "moreTitle") { SectionTitle("More videos") }
                     items(related, key = { "rel-" + it.id }) { video ->
@@ -649,7 +653,7 @@ private fun PlayerActions(state: PlayerState) {
     ) {
         AccountActions(state)
         if (item != null) {
-            ActionPill(
+            if (!Tweaks.hideDownload.value) ActionPill(
                 icon = Icons.Rounded.Download,
                 label = if (item.localUri != null) "Downloaded" else "Download",
                 active = item.localUri != null,
@@ -686,6 +690,64 @@ private fun PlayerActions(state: PlayerState) {
                     putExtra(Intent.EXTRA_TEXT, url)
                 }
                 context.startActivity(Intent.createChooser(intent, item.title))
+            }
+            if (Tweaks.showShareAtTime.value && !item.isLive) ActionPill(
+                icon = Icons.Rounded.Schedule,
+                label = "Share at ${formatDuration(state.positionMs)}",
+                active = false,
+                flourish = Flourish.Pop,
+                shape = RoundedCornerShape(18.dp),
+                description = "Share video at the current time",
+            ) {
+                val url = "https://youtu.be/${item.id}?t=${state.positionMs / 1000}"
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, url)
+                }
+                context.startActivity(Intent.createChooser(intent, item.title))
+            }
+            if (Tweaks.showCopyLink.value) ActionPill(
+                icon = Icons.Rounded.Link,
+                label = "Copy link",
+                active = false,
+                flourish = Flourish.Pop,
+                shape = RoundedCornerShape(18.dp),
+                description = "Copy video link",
+            ) {
+                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Video link", "https://youtu.be/${item.id}"))
+                state.actionMessage = "Link copied"
+            }
+            if (Tweaks.showOpenBrowser.value) ActionPill(
+                icon = Icons.Rounded.OpenInBrowser,
+                label = "Browser",
+                active = false,
+                flourish = Flourish.Pop,
+                shape = RoundedCornerShape(18.dp),
+                description = "Open in browser",
+            ) {
+                runCatching {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com/watch?v=${item.id}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                }
+            }
+            if (Tweaks.showMarkWatched.value) {
+                val watched = Watched.has(item.id)
+                ActionPill(
+                    icon = Icons.Rounded.CheckCircle,
+                    label = if (watched) "Watched" else "Mark watched",
+                    active = watched,
+                    flourish = Flourish.Pop,
+                    shape = RoundedCornerShape(18.dp),
+                    description = "Mark as watched",
+                ) {
+                    if (watched) {
+                        Watched.remove(item.id)
+                        state.actionMessage = "Marked as not watched"
+                    } else {
+                        Watched.add(item.id)
+                        state.actionMessage = "Marked as watched"
+                    }
+                }
             }
         }
     }

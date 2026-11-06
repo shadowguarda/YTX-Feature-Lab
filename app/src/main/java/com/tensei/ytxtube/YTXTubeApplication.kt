@@ -25,6 +25,8 @@ class YTXTubeApplication : Application(), ImageLoaderFactory {
         AmbientSettings.init(this)
         DeArrow.init(this)
         ContentFilters.init(this)
+        Tweaks.init(this)
+        Watched.init(this)
         SkipSilence.init(this)
         AudioEffects.init(this)
         NetworkSpeed.init(this)

@@ -1243,6 +1243,7 @@ private fun GeneralModificationContent(context: Context) {
     var showKeywordDialog by remember { mutableStateOf(false) }
     var showChannelDialog by remember { mutableStateOf(false) }
     var showAmbientSheet by remember { mutableStateOf(false) }
+    var showTweaksSheet by remember { mutableStateOf(false) }
 
     val folderPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -1290,6 +1291,13 @@ private fun GeneralModificationContent(context: Context) {
             onClick = { showAmbientSheet = true },
         )
         if (showAmbientSheet) AmbientSettingsSheet(onDismiss = { showAmbientSheet = false })
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "YTX Tweaks",
+            subtitle = "Feed filters, gesture tuning and watch-page buttons",
+            onClick = { showTweaksSheet = true },
+        )
+        if (showTweaksSheet) TweaksSheet(onDismiss = { showTweaksSheet = false })
         SettingsRow(
             icon = Icons.Rounded.Tune,
             title = "YTX Lab",
