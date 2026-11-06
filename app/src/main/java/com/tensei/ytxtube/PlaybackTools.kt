@@ -69,6 +69,22 @@ object SkipSilence {
     }
 }
 
+/** Repeats the current video until switched off (NewPipe, LibreTube and SmartTube all have this). */
+object LoopVideo {
+    var enabled by mutableStateOf(false)
+        private set
+
+    fun toggle(): Boolean {
+        enabled = !enabled
+        applyTo(PlayerBridge.exo)
+        return enabled
+    }
+
+    fun applyTo(player: ExoPlayer?) {
+        player?.repeatMode = if (enabled) androidx.media3.common.Player.REPEAT_MODE_ONE else androidx.media3.common.Player.REPEAT_MODE_OFF
+    }
+}
+
 /** Pauses playback after a chosen number of minutes. Tap the setting again to step to the next value. */
 object SleepTimer {
     private val steps = listOf(0, 15, 30, 45, 60)

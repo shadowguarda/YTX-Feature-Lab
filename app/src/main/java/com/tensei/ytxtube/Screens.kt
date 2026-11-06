@@ -1157,8 +1157,20 @@ fun SearchScreen(
             else -> {
                 val list = rememberScrollToTop(scrollToTop)
                 LaunchedEffect(state.generation) { list.scrollToItem(0) }
+                var searchFilter by remember { mutableStateOf(SearchFilter()) }
+                val shown = remember(state.results, searchFilter) { searchFilter.apply(state.results) }
                 LazyColumn(state = list, contentPadding = contentPadding.withTop(top)) {
-                items(state.results, key = { it.id }) { video ->
+                item(key = "search-filters") {
+                    SearchFilterRow(searchFilter, onChange = { searchFilter = it }, modifier = Modifier.padding(bottom = 8.dp))
+                }
+                if (shown.isEmpty()) item(key = "search-filters-empty") {
+                    Text(
+                        "No results match these filters.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    )
+                }
+                items(shown, key = { it.id }) { video ->
                     VideoCard(video, onClick = {
                         val currentQuery = state.submitted.trim().ifEmpty { state.query.trim() }
                         if (currentQuery.isNotEmpty()) {

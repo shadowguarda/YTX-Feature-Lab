@@ -1321,6 +1321,16 @@ fun PlayerSettingsSheet(state: PlayerState, backdrop: Backdrop, onDismiss: () ->
 
 
                 PlayerSettingItem(
+                    icon = Icons.Rounded.RepeatOne,
+                    title = "Loop video",
+                    value = if (LoopVideo.enabled) "On" else "Off",
+                    onClick = {
+                        state.actionMessage = if (LoopVideo.toggle()) "Looping this video" else "Loop off"
+                    }
+                )
+
+
+                PlayerSettingItem(
                     icon = Icons.Rounded.PlayCircle,
                     title = "Autoplay",
                     value = if (state.autoPlayEnabled) "On" else "Off",
