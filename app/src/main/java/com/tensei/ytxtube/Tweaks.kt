@@ -67,6 +67,7 @@ object Tweaks {
     val seekStepSec = IntTweak("seek_step_sec", 10)
     val holdSpeedX10 = IntTweak("hold_speed_x10", 20)
     val controlsHideSec = IntTweak("controls_hide_sec", 2)
+    val gestureSensitivity = IntTweak("gesture_sensitivity", 100)
     val remainingTime = BoolTweak("remaining_time", false)
     val haptics = BoolTweak("haptics", true)
     val resume = BoolTweak("resume", true)
@@ -85,7 +86,7 @@ object Tweaks {
         hideShorts, hideLive, hideWatched, remainingTime, haptics, resume, showShareAtTime, showCopyLink,
         showOpenBrowser, showMarkWatched, hideDownload, hideRelated, hideCommentsCard, hideChaptersCard,
     )
-    private val ints = listOf(minLengthMin, maxLengthMin, minViewsK, seekStepSec, holdSpeedX10, controlsHideSec)
+    private val ints = listOf(minLengthMin, maxLengthMin, minViewsK, seekStepSec, holdSpeedX10, controlsHideSec, gestureSensitivity)
 
     fun init(context: Context) {
         val p = context.getSharedPreferences("tweaks", Context.MODE_PRIVATE).also { prefs = it }
@@ -131,7 +132,14 @@ object Watched {
         ids.addAll(p.getString("ids", "").orEmpty().split(',').filter { it.isNotBlank() })
     }
 
+    val count: Int get() = ids.size
+
     fun has(id: String): Boolean = id in ids
+
+    fun clear() {
+        ids.clear()
+        save()
+    }
 
     fun add(id: String) {
         if (id.isBlank() || id in ids) return
@@ -172,6 +180,7 @@ fun TweaksSheet(onDismiss: () -> Unit) {
             TweakHeader("Player")
             TweakChoice("Double-tap seek", Tweaks.seekStepSec, listOf(5, 10, 15, 20, 30)) { "$it s" }
             TweakChoice("Hold to speed up", Tweaks.holdSpeedX10, listOf(15, 20, 30, 40)) { "${it / 10f}x" }
+            TweakChoice("Brightness and volume swipe sensitivity", Tweaks.gestureSensitivity, listOf(50, 75, 100, 150, 200)) { "$it%" }
             TweakChoice("Hide controls after", Tweaks.controlsHideSec, listOf(2, 3, 5, 8)) { "$it s" }
             TweakSwitch("Show remaining time", "Count down instead of showing the total length", Tweaks.remainingTime)
             TweakSwitch("Haptic feedback", "Small vibrations on taps", Tweaks.haptics)

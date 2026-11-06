@@ -33,6 +33,11 @@ object ResumeStore {
     }
 
 
+    fun clearAll() {
+        positions.clear()
+        prefs?.edit()?.clear()?.apply()
+    }
+
     fun startPosition(id: String): Long = positions[id]?.first ?: 0L
 
 

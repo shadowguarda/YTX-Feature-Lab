@@ -70,6 +70,8 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Block
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.DataUsage
 import androidx.compose.material.icons.rounded.Delete
@@ -132,6 +134,9 @@ fun SettingsScreen(
     var cacheMessage by remember { mutableStateOf<String?>(null) }
     var activeFloatingSection by remember { mutableStateOf<SettingsFloatingSection?>(null) }
     var showSignOutConfirm by remember { mutableStateOf(false) }
+    var showSettingsSearch by remember { mutableStateOf(false) }
+    var showPrivacy by remember { mutableStateOf(false) }
+    var generalAutoOpen by remember { mutableStateOf<String?>(null) }
     var checkingUpdate by remember { mutableStateOf(false) }
     var updateFeedback by remember { mutableStateOf<String?>(null) }
 
@@ -176,6 +181,15 @@ fun SettingsScreen(
                     onAccountSwitched = onAccountSwitched,
                 )
 
+                SettingsCard {
+                    SettingsRow(
+                        icon = Icons.Rounded.Search,
+                        title = "Search settings",
+                        subtitle = "Find any setting, then jump straight to it",
+                        onClick = { showSettingsSearch = true },
+                    )
+                }
+
                 SettingsSectionHeader("Customization")
                 SettingsCard {
                     SettingsRow(
@@ -198,6 +212,12 @@ fun SettingsScreen(
 
                 SettingsSectionHeader("Data & Storage")
                 SettingsCard {
+                    SettingsRow(
+                        icon = Icons.Rounded.Lock,
+                        title = "Privacy",
+                        subtitle = "Clear history, see what stays local and what is sent out",
+                        onClick = { showPrivacy = true },
+                    )
                     SettingsRow(
                         icon = Icons.Rounded.DataUsage,
                         title = "Storage Usage",
@@ -285,6 +305,25 @@ fun SettingsScreen(
             }
         }
 
+        if (showSettingsSearch) {
+            SettingsSearchSheet(
+                onDismiss = { showSettingsSearch = false },
+                onPick = { target ->
+                    showSettingsSearch = false
+                    generalAutoOpen = null
+                    when (target) {
+                        SettingTarget.APPEARANCE -> activeFloatingSection = SettingsFloatingSection.APPEARANCE
+                        SettingTarget.GENERAL -> activeFloatingSection = SettingsFloatingSection.GENERAL_MODS
+                        SettingTarget.STORAGE -> activeFloatingSection = SettingsFloatingSection.STORAGE_USAGE
+                        SettingTarget.AMBIENT -> { generalAutoOpen = "ambient"; activeFloatingSection = SettingsFloatingSection.GENERAL_MODS }
+                        SettingTarget.TWEAKS -> { generalAutoOpen = "tweaks"; activeFloatingSection = SettingsFloatingSection.GENERAL_MODS }
+                        SettingTarget.PRIVACY -> showPrivacy = true
+                    }
+                },
+            )
+        }
+        if (showPrivacy) PrivacySheet(onDismiss = { showPrivacy = false })
+
         if (isOverlayOpen) {
             Box(
                 modifier = Modifier
@@ -317,7 +356,7 @@ fun SettingsScreen(
                         subtitle = "Font, gestures, quality & downloads",
                         onDismiss = { activeFloatingSection = null },
                     ) {
-                        GeneralModificationContent(context = context)
+                        GeneralModificationContent(context = context, autoOpen = generalAutoOpen)
                     }
                 }
                 SettingsFloatingSection.STORAGE_USAGE -> {
@@ -1235,7 +1274,7 @@ private fun DownloadFolderSelectionDialog(
 }
 
 @Composable
-private fun GeneralModificationContent(context: Context) {
+private fun GeneralModificationContent(context: Context, autoOpen: String? = null) {
     val c = MaterialTheme.colorScheme
     var showVideoQualityDialog by remember { mutableStateOf(false) }
     var showShortsQualityDialog by remember { mutableStateOf(false) }
@@ -1244,6 +1283,12 @@ private fun GeneralModificationContent(context: Context) {
     var showChannelDialog by remember { mutableStateOf(false) }
     var showAmbientSheet by remember { mutableStateOf(false) }
     var showTweaksSheet by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(autoOpen) {
+        when (autoOpen) {
+            "ambient" -> showAmbientSheet = true
+            "tweaks" -> showTweaksSheet = true
+        }
+    }
 
     val folderPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()

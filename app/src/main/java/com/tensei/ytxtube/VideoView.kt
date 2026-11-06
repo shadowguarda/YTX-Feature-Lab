@@ -359,7 +359,7 @@ fun VideoContent(
                                         val attrs = window.attributes
                                         val currentB = if (attrs.screenBrightness < 0f) 0.5f else attrs.screenBrightness
 
-                                        val newB = (currentB + (dy / size.height) * 0.85f).coerceIn(0.02f, 1f)
+                                        val newB = (currentB + (dy / size.height) * 0.85f * (Tweaks.gestureSensitivity.value / 100f)).coerceIn(0.02f, 1f)
                                         attrs.screenBrightness = newB
                                         window.attributes = attrs
                                         gestureHud = Pair(Icons.Rounded.BrightnessMedium, Pair("Brightness", newB))
@@ -367,7 +367,7 @@ fun VideoContent(
                                         val maxV = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
                                         val curV = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
 
-                                        val deltaV = ((dy / size.height) * maxV * 1.0f).toInt()
+                                        val deltaV = ((dy / size.height) * maxV * (Tweaks.gestureSensitivity.value / 100f)).toInt()
                                         if (deltaV != 0) {
                                             val newV = (curV + deltaV).coerceIn(0, maxV)
                                             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newV, 0)
