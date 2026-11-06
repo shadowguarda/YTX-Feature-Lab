@@ -704,6 +704,10 @@ fun YtxTubeApp() {
                 },
                 contentPadding = contentPadding,
                 onCheckUpdate = { updateState.check(manual = true) },
+                labsPlayer = player,
+                labsLibrary = lib,
+                onLabsOpenVideo = { v -> openSettings = false; player.open(v) },
+                onLabsOpenChannel = { u -> openSettings = false; openChannel = u },
             )
         }
 

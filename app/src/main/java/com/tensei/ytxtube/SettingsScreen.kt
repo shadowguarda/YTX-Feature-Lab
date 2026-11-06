@@ -124,6 +124,10 @@ fun SettingsScreen(
     onAccountSwitched: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(0.dp),
     onCheckUpdate: () -> Unit = {},
+    labsPlayer: PlayerState? = null,
+    labsLibrary: LibraryData? = null,
+    onLabsOpenVideo: (VideoItem) -> Unit = {},
+    onLabsOpenChannel: (String) -> Unit = {},
 ) {
     val c = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -1285,6 +1289,7 @@ private fun GeneralModificationContent(context: Context, autoOpen: String? = nul
     var showAmbientSheet by remember { mutableStateOf(false) }
     var showTweaksSheet by remember { mutableStateOf(false) }
     var showProfiles by remember { mutableStateOf(false) }
+    var showLabs by remember { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(autoOpen) {
         when (autoOpen) {
             "profiles" -> showProfiles = true
@@ -1353,6 +1358,13 @@ private fun GeneralModificationContent(context: Context, autoOpen: String? = nul
             onClick = { showProfiles = true },
         )
         if (showProfiles) ProfilesSheet(onDismiss = { showProfiles = false })
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "Labs",
+            subtitle = "Theme engine, navigation, home feed, player, gestures, music, downloads, privacy and more (experimental)",
+            onClick = { showLabs = true },
+        )
+        if (showLabs) LabsHubSheet(labsPlayer, labsLibrary, onLabsOpenVideo, onLabsOpenChannel) { showLabs = false }
         SettingsRow(
             icon = Icons.Rounded.Tune,
             title = "YTX Lab",
