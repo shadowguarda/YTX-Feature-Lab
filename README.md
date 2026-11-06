@@ -22,6 +22,7 @@ A lightweight YouTube and YouTube Music client with a modern Liquid Glass UI, ad
 - Search filters: duration, upload date, live only and sort order
 - Like/dislike bar on the watch page (Return YouTube Dislike), loop-video toggle
 - YTX Tweaks: hide Shorts, live, watched, too short/long or low-view videos; seek step, hold-speed, control timeout, remaining time, haptics and resume options; share at current time, copy link, open in browser and mark watched buttons; hide download, chapters, comments or related
+- Settings search that jumps to the matching setting, and a Privacy sheet: clear history, see what stays on the device and what is sent out
 - DeArrow titles and blocked keywords / channels
 - Faster starts: the first videos in every feed and the next-up videos are resolved ahead of the tap, and the video server connection is pre-warmed
 - Android TV support too: the same APK runs on TV with full D-pad navigation
@@ -30,7 +31,7 @@ A lightweight YouTube and YouTube Music client with a modern Liquid Glass UI, ad
 
 [Download the latest YTXTube APK](https://github.com/shadowguarda/YTX-Feature-Lab/releases/latest)
 
-Version 2.6.0 · Android 7.0+ · one APK for phones, tablets and Android TV.
+Version 2.7.0 · Android 7.0+ · one APK for phones, tablets and Android TV.
 
 ## Screenshots
 
@@ -55,7 +56,7 @@ This project is maintained by [kairo-xy](https://github.com/Kairo-xy).
 
 YTXTube is a fork of [Koustubh12345/YTXTube](https://github.com/Koustubh12345/YTXTube), which is based on [FlashTube](https://github.com/JustaThinker/FlashTube). Playback and extraction use [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor). The live ambient light adapts the approach of [MeeTube](https://github.com/yashoncode/meetube) (MIT); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Feature research and planned improvements inspired by the wider open-source client ecosystem are tracked in [docs/FEATURE_RESEARCH.md](docs/FEATURE_RESEARCH.md). Inspiration does not imply code reuse; third-party code is only incorporated with license and attribution review.
+Roadmap and status of every feature: [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md); implementation notes: [docs/IMPLEMENTATION_NOTES.md](docs/IMPLEMENTATION_NOTES.md). Feature research and planned improvements inspired by the wider open-source client ecosystem are tracked in [docs/FEATURE_RESEARCH.md](docs/FEATURE_RESEARCH.md). Inspiration does not imply code reuse; third-party code is only incorporated with license and attribution review.
 
 ## Build
 
