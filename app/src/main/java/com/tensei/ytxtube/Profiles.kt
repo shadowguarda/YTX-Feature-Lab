@@ -137,36 +137,66 @@ fun ProfilesSheet(onDismiss: () -> Unit) {
     var customs by remember { mutableStateOf(Profiles.custom(context)) }
     var newName by remember { mutableStateOf("") }
     var hex by remember { mutableStateOf(ThemeSettings.seed.orEmpty()) }
+    var conflictMode by remember { mutableStateOf(Backup.ConflictMode.Replace) }
+    var pendingImport by remember { mutableStateOf<android.net.Uri?>(null) }
+    var confirmImport by remember { mutableStateOf(false) }
+
+    val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri != null) {
+            runCatching { Backup.exportTo(context, uri) }
+                .onSuccess { message = "Full settings backup exported successfully" }
+                .onFailure { message = "Export failed: ${it.message ?: "unknown error"}" }
+        }
+    }
+    val importLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            pendingImport = uri
+            confirmImport = true
+        }
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.surfaceContainerLow) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(bottom = 28.dp)) {
             Text("Profiles and backup", fontFamily = RoundedHeavy, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)
-            if (message.isNotBlank()) Text(message, color = c.primary, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
+            Text(
+                "Build a setup you love, save it as a profile, or move your settings safely between installs.",
+                color = c.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp),
+            )
+            if (message.isNotBlank()) {
+                Text(message, color = c.primary, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
+            }
 
-            ProfileHeader("Look presets")
+            ProfileHeader("One-tap looks")
             Profiles.builtIn.forEach { (name, data) ->
                 ProfileRow(name, "Apply") { message = "Applied $name (${Profiles.apply(context, data)} settings)" }
             }
 
-            ProfileHeader("My profiles")
+            ProfileHeader("Your profiles")
             OutlinedTextField(
                 value = newName, onValueChange = { newName = it.take(24) }, singleLine = true,
-                label = { Text("Name for the current setup") }, modifier = Modifier.fillMaxWidth(),
+                label = { Text("Name this setup") }, modifier = Modifier.fillMaxWidth(),
             )
             ProfileRow("Save current setup", "Save") {
-                if (newName.isBlank()) message = "Give it a name first" else {
+                if (newName.isBlank()) message = "Give your profile a name first" else {
                     Profiles.saveCurrent(context, newName.trim())
                     customs = Profiles.custom(context)
-                    message = "Saved ${newName.trim()}"
+                    message = "Saved profile: ${newName.trim()}"
                     newName = ""
                 }
+            }
+            if (customs.isEmpty()) {
+                Text("Your saved profiles will appear here.", color = c.onSurfaceVariant, fontSize = 12.sp)
             }
             customs.forEach { (name, data) ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(name, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                    Pill("Apply") { message = "Applied $name"; Profiles.apply(context, data) }
+                    Pill("Apply") { message = "Applied $name (${Profiles.apply(context, data)} settings)" }
                     Spacer(Modifier.width(8.dp))
-                    Pill("Delete") { Profiles.delete(context, name); customs = Profiles.custom(context) }
+                    Pill("Delete") { Profiles.delete(context, name); customs = Profiles.custom(context); message = "Deleted $name" }
                 }
             }
 
@@ -175,29 +205,101 @@ fun ProfilesSheet(onDismiss: () -> Unit) {
                 value = hex, onValueChange = { hex = it.take(7) }, singleLine = true,
                 label = { Text("Hex colour, like #7B4DFF") }, modifier = Modifier.fillMaxWidth(),
             )
-            ProfileRow("Use this colour", "Apply") {
+            ProfileRow("Apply accent colour", "Apply") {
                 if (Profiles.isHexColour(hex)) {
                     ThemeSettings.choose("#" + hex.trim().removePrefix("#").uppercase())
                     message = "Accent colour applied"
                 } else message = "Enter 6 hex digits, like #7B4DFF"
             }
 
-            ProfileHeader("Backup")
-            ProfileRow("Copy my settings", "Copy") {
-                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                cm.setPrimaryClip(ClipData.newPlainText("YTXTube settings", Profiles.snapshot(context).toString()))
-                message = "Settings copied. Paste them anywhere to keep them."
+            ProfileHeader("Full device backup")
+            Text(
+                "Exports app settings to a JSON file you choose. Login details, cookies and secure credentials are excluded.",
+                color = c.onSurfaceVariant, fontSize = 12.sp,
+            )
+            ProfileRow("Export all safe settings", "Export") {
+                exportLauncher.launch("YTXTube-settings-backup.json")
             }
-            ProfileRow("Paste settings from clipboard", "Paste") {
+            ProfileRow("Restore from backup file", "Import") {
+                importLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+            }
+
+            ProfileHeader("Restore conflict handling")
+            Text(
+                "Choose what happens when a backup contains a setting that already exists on this device.",
+                color = c.onSurfaceVariant, fontSize = 12.sp,
+            )
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            ) {
+                Backup.ConflictMode.entries.forEach { mode ->
+                    androidx.compose.material3.FilterChip(
+                        selected = conflictMode == mode,
+                        onClick = { conflictMode = mode },
+                        label = { Text(mode.label) },
+                    )
+                }
+            }
+            Text(
+                if (conflictMode == Backup.ConflictMode.Replace)
+                    "Backup values replace matching settings. Settings absent from the backup are removed from included preference files."
+                else "Your current values stay untouched. Only missing settings are added.",
+                color = c.onSurfaceVariant, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp),
+            )
+
+            ProfileHeader("Quick profile transfer")
+            ProfileRow("Copy current look", "Copy") {
+                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(ClipData.newPlainText("YTXTube profile", Profiles.snapshot(context).toString()))
+                message = "Look profile copied to clipboard"
+            }
+            ProfileRow("Paste look profile", "Paste") {
                 val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 val text = cm.primaryClip?.getItemAt(0)?.text?.toString().orEmpty()
                 val json = runCatching { JSONObject(text) }.getOrNull()
                 val n = json?.let { Profiles.apply(context, it) } ?: 0
-                message = if (n > 0) "Restored $n settings" else "The clipboard does not hold YTXTube settings"
+                message = if (n > 0) "Restored $n look settings" else "Clipboard does not contain a valid YTX look profile"
             }
             Spacer(Modifier.height(10.dp))
-            Text("Backups cover the YTX Tweaks, ambient light, theme mode and accent colour.", color = c.onSurfaceVariant, fontSize = 12.sp)
+            Text(
+                "Look profiles contain YTX Tweaks and appearance settings. Full backups include all safe app preference files and are better for moving to a new install.",
+                color = c.onSurfaceVariant, fontSize = 12.sp,
+            )
         }
+    }
+
+    if (confirmImport) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmImport = false; pendingImport = null },
+            title = { Text("Restore settings?") },
+            text = {
+                Text(
+                    if (conflictMode == Backup.ConflictMode.Replace)
+                        "This replaces settings in the backup's included preference files. Consider exporting your current settings first."
+                    else "This keeps existing values and adds only settings missing from this device.",
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    val uri = pendingImport
+                    confirmImport = false
+                    pendingImport = null
+                    if (uri != null) {
+                        runCatching { Backup.importFrom(context, uri, conflictMode) }
+                            .onSuccess { result ->
+                                message = "Restored ${result.applied} settings; skipped ${result.skipped}. Restart the app to apply everything."
+                            }
+                            .onFailure { message = "Import failed: ${it.message ?: "invalid backup file"}" }
+                    }
+                }) { Text("Restore") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { confirmImport = false; pendingImport = null }) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 }
 
