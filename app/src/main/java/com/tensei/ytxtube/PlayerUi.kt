@@ -430,6 +430,7 @@ fun PlayerScreen(
                             }
                         }
                         PlayerActions(state)
+                        VoteBar(item.id, Modifier.padding(top = 10.dp))
                         QueueCard(state, onOpen = { state.sheet = PlayerSheet.Queue })
                         ChaptersCard(state, onOpen = { state.sheet = PlayerSheet.Chapters })
                         CommentsCard(

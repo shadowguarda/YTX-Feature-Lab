@@ -122,6 +122,7 @@ class PlaybackService : MediaSessionService() {
         )
         PlayerBridge.exo = player
         SkipSilence.applyTo(player)
+        LoopVideo.applyTo(player)
         player.setVideoFrameMetadataListener { _, releaseTimeNs, _, _ -> AvSync.onFrameReleased(releaseTimeNs) }
         player.addListener(SponsorSkipper(player))
         player.addListener(SpeedKeeper(player))
