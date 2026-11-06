@@ -71,10 +71,15 @@ object Backup {
                 continue
             }
             val prefs = context.getSharedPreferences(name, Context.MODE_PRIVATE)
-            val plan = BackupCodec.mergePlan(prefs.all, values, mode)
+            val existing = prefs.all
+            val plan = BackupCodec.mergePlan(existing, values, mode)
             skipped += plan.skipped
-            if (plan.writes.isEmpty()) continue
+            if (plan.writes.isEmpty() && mode != ConflictMode.Replace) continue
+            val removed = if (mode == ConflictMode.Replace) (existing.keys - plan.writes.keys).size else 0
             val edit = prefs.edit()
+            // Replace means a true snapshot restore: remove stale keys that are absent
+            // from the imported preference file before writing the backup values.
+            if (mode == ConflictMode.Replace) edit.clear()
             for ((key, v) in plan.writes) {
                 when (v) {
                     is Boolean -> edit.putBoolean(key, v)
@@ -86,7 +91,7 @@ object Backup {
                 }
             }
             edit.apply()
-            applied += plan.writes.size
+            applied += plan.writes.size + removed
         }
         return ImportResult(applied, skipped, ignored)
     }
