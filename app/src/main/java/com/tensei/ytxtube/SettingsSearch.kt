@@ -52,6 +52,10 @@ private val SettingIndex = listOf(
     SettingEntry("Feed filters", "YTX Tweaks", "hide shorts live watched length views filter feed search", SettingTarget.TWEAKS),
     SettingEntry("Seek step, hold speed and controls", "YTX Tweaks", "playback double tap seek hold speed controls hide delay remaining time haptics resume", SettingTarget.TWEAKS),
     SettingEntry("Watch page buttons", "YTX Tweaks", "share copy link browser mark watched download chapters comments related", SettingTarget.TWEAKS),
+    SettingEntry("Lyrics timing", "YTX Tweaks", "lyrics offset sync bluetooth delay timing music", SettingTarget.TWEAKS),
+    SettingEntry("Personalised related videos", "YTX Tweaks", "recommendations discovery related personalise personalize for you", SettingTarget.TWEAKS),
+    SettingEntry("ListenBrainz scrobbling", "YTX Tweaks", "scrobble listenbrainz listens last.fm music history", SettingTarget.TWEAKS),
+    SettingEntry("Frame step", "In the player: Settings", "playback frame step frame by frame pause", null),
     SettingEntry("Privacy dashboard", "Data & Privacy", "privacy history watch search clear delete cache data local remote logging", SettingTarget.PRIVACY),
     SettingEntry("Storage and cache", "Storage Usage", "storage cache clear space memory downloads", SettingTarget.STORAGE),
     SettingEntry("Equalizer", "In the player: Settings", "equalizer audio bass loudness boost presets", null),
@@ -131,6 +135,7 @@ fun PrivacySheet(onDismiss: () -> Unit) {
             ClearRow("Search history", "${SearchHistory.queries.size} searches", SearchHistory.queries.isNotEmpty()) { SearchHistory.clear() }
             ClearRow("Watched videos", "${Watched.count} remembered as watched", Watched.count > 0) { Watched.clear() }
             ClearRow("Resume positions", "${ResumeStore.positions.size} videos with a saved position", ResumeStore.positions.isNotEmpty()) { ResumeStore.clearAll() }
+            ClearRow("Personalisation data", "${Discovery.count} watches used for related videos", Discovery.count > 0) { Discovery.clear() }
             ClearRow("Image and video cache", "Temporary files; they are downloaded again when needed", true) {
                 context.cacheDir.deleteRecursively()
                 context.externalCacheDir?.deleteRecursively()
@@ -141,6 +146,7 @@ fun PrivacySheet(onDismiss: () -> Unit) {
             Disclosure("SponsorBlock", "Sends the first 4 characters of a hash of the video ID to sponsor.ajay.app to look up skippable segments. Set every category to ignore to stop it.")
             Disclosure("DeArrow", if (DeArrow.enabled) "On: sends the same short hash prefix to sponsor.ajay.app." else "Off: nothing is sent.")
             Disclosure("Return YouTube Dislike", if (ReturnDislike.enabled) "On: sends the video ID to returnyoutubedislikeapi.com." else "Off: nothing is sent.")
+            Disclosure("ListenBrainz", if (ListenBrainz.enabled) "On: sends the title, artist and time of each music listen to api.listenbrainz.org with your token." else "Off: nothing is sent.")
             Disclosure("Updates", "Checking for updates asks api.github.com for the latest release of this app.")
             Spacer(Modifier.height(10.dp))
             Text("There is no analytics or crash reporting in this app.", color = c.onSurfaceVariant, fontSize = 12.sp)

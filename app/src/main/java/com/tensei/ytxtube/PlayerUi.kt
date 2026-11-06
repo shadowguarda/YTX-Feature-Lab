@@ -235,6 +235,29 @@ fun PlayerScreen(
 
     val isDark = isDarkTheme()
     val isAmoled = ThemeSettings.mode == "amoled"
+    // A video counts towards personalised "More videos" after 30 seconds of actual watching.
+    LaunchedEffect(item.id, Discovery.enabled, state.isMusicMode) {
+        if (!Discovery.enabled || state.isMusicMode) return@LaunchedEffect
+        var watched = 0L
+        while (watched < 30_000L) {
+            kotlinx.coroutines.delay(1_000L)
+            if (state.isPlaying) watched += 1_000L
+        }
+        Discovery.record(item)
+    }
+    // Music mode: send a listen to ListenBrainz once half the track (or four minutes) has played.
+    LaunchedEffect(item.id, ListenBrainz.enabled, state.isMusicMode) {
+        if (!ListenBrainz.enabled || !state.isMusicMode) return@LaunchedEffect
+        var played = 0L
+        while (true) {
+            kotlinx.coroutines.delay(1_000L)
+            if (state.isPlaying) played += 1_000L
+            val total = state.durationMs
+            if (total in 1..29_999L) return@LaunchedEffect
+            if (total > 0 && played >= minOf(240_000L, total / 2)) break
+        }
+        ListenBrainz.listened(item.title, item.channel, item.durationSec)
+    }
     val ambientOn = AmbientSettings.enabled && !isAmoled && !state.isMusicMode
     val ambientFrames = rememberAmbientFrames(active = ambientOn)
     val ambientStatusBarPx = if (AmbientSettings.statusBar) WindowInsets.statusBars.getTop(LocalDensity.current) else 0
@@ -444,11 +467,17 @@ fun PlayerScreen(
                         )
                     }
                 }
-                val related = if (Tweaks.hideRelated.value) emptyList() else details?.related.orEmpty()
+                val relatedRaw = if (Tweaks.hideRelated.value) emptyList() else details?.related.orEmpty()
+                val related = Discovery.rank(relatedRaw)
                 if (related.isNotEmpty()) {
                     item(key = "moreTitle") { SectionTitle("More videos") }
-                    items(related, key = { "rel-" + it.id }) { video ->
-                        Box(Modifier.padding(horizontal = 20.dp)) { VideoRow(video, onClick = { onOpen(video) }) }
+                    items(related, key = { "rel-" + it.video.id }) { ranked ->
+                        Column(Modifier.padding(horizontal = 20.dp)) {
+                            if (ranked.why != null) {
+                                Text(ranked.why, color = c.primary, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+                            }
+                            VideoRow(ranked.video, onClick = { onOpen(ranked.video) })
+                        }
                     }
                 } else if (state.loading) {
                     item(key = "loading") {
@@ -1602,7 +1631,7 @@ private fun MusicLyricsPanel(
                 }
                 lyrics.synced -> SyncedLyrics(
                     lyrics = lyrics,
-                    positionMs = positionMs,
+                    positionMs = positionMs + Tweaks.lyricsOffsetMs.value,
                     englishScript = englishScript,
                     onSeek = onSeek,
                 )

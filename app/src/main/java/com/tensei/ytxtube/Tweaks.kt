@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,6 +69,7 @@ object Tweaks {
     val holdSpeedX10 = IntTweak("hold_speed_x10", 20)
     val controlsHideSec = IntTweak("controls_hide_sec", 2)
     val gestureSensitivity = IntTweak("gesture_sensitivity", 100)
+    val lyricsOffsetMs = IntTweak("lyrics_offset_ms", 0)
     val remainingTime = BoolTweak("remaining_time", false)
     val haptics = BoolTweak("haptics", true)
     val resume = BoolTweak("resume", true)
@@ -86,7 +88,7 @@ object Tweaks {
         hideShorts, hideLive, hideWatched, remainingTime, haptics, resume, showShareAtTime, showCopyLink,
         showOpenBrowser, showMarkWatched, hideDownload, hideRelated, hideCommentsCard, hideChaptersCard,
     )
-    private val ints = listOf(minLengthMin, maxLengthMin, minViewsK, seekStepSec, holdSpeedX10, controlsHideSec, gestureSensitivity)
+    private val ints = listOf(minLengthMin, maxLengthMin, minViewsK, seekStepSec, holdSpeedX10, controlsHideSec, gestureSensitivity, lyricsOffsetMs)
 
     fun init(context: Context) {
         val p = context.getSharedPreferences("tweaks", Context.MODE_PRIVATE).also { prefs = it }
@@ -186,6 +188,20 @@ fun TweaksSheet(onDismiss: () -> Unit) {
             TweakSwitch("Haptic feedback", "Small vibrations on taps", Tweaks.haptics)
             TweakSwitch("Resume where you left off", null, Tweaks.resume)
 
+            TweakHeader("Music and personalisation")
+            TweakChoice("Lyrics timing (positive = lyrics earlier)", Tweaks.lyricsOffsetMs, listOf(-1000, -500, -250, 0, 250, 500, 1000)) { if (it == 0) "In sync" else "${if (it > 0) "+" else ""}$it ms" }
+            TweakSwitch("Personalised related videos", "Ranks More videos by what you watch, on this device only. ${Discovery.count} watches remembered", Discovery.enabled, Discovery::updateEnabled)
+            TweakSwitch("Send listens to ListenBrainz", "Music mode only. ${if (ListenBrainz.status.isNotBlank()) ListenBrainz.status else "Needs your user token"}", ListenBrainz.enabled, ListenBrainz::updateEnabled)
+            var lbToken by remember { mutableStateOf(ListenBrainz.token) }
+            androidx.compose.material3.OutlinedTextField(
+                value = lbToken,
+                onValueChange = { lbToken = it; ListenBrainz.updateToken(it) },
+                singleLine = true,
+                label = { Text("ListenBrainz user token") },
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            )
+
             TweakHeader("Watch page")
             TweakSwitch("Share at current time button", null, Tweaks.showShareAtTime)
             TweakSwitch("Copy link button", null, Tweaks.showCopyLink)
@@ -212,14 +228,18 @@ private fun TweakHeader(text: String) {
 }
 
 @Composable
-private fun TweakSwitch(title: String, subtitle: String?, tweak: BoolTweak) {
+private fun TweakSwitch(title: String, subtitle: String?, tweak: BoolTweak) =
+    TweakSwitch(title, subtitle, tweak.value) { tweak.update(it) }
+
+@Composable
+private fun TweakSwitch(title: String, subtitle: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
     val c = MaterialTheme.colorScheme
     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             if (subtitle != null) Text(subtitle, fontSize = 12.sp, color = c.onSurfaceVariant)
         }
-        Switch(checked = tweak.value, onCheckedChange = { tweak.update(it) })
+        Switch(checked = checked, onCheckedChange = onChange)
     }
 }
 
