@@ -132,7 +132,7 @@ fun SettingsSearchSheet(onPick: (SettingTarget) -> Unit, onDismiss: () -> Unit) 
     val c = MaterialTheme.colorScheme
     var query by remember { mutableStateOf("") }
     val results = remember(query) { search(query) }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.surfaceContainerLow) {
+    FloatingSheet(onDismiss) {
         Column(Modifier.padding(horizontal = 22.dp).padding(bottom = 20.dp)) {
             Text("Search settings", fontFamily = RoundedHeavy, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)
             Spacer(Modifier.height(10.dp))
@@ -185,8 +185,8 @@ fun SettingsSearchSheet(onPick: (SettingTarget) -> Unit, onDismiss: () -> Unit) 
 fun PrivacySheet(onDismiss: () -> Unit) {
     val c = MaterialTheme.colorScheme
     val context = LocalContext.current
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.surfaceContainerLow) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(bottom = 28.dp)) {
+    FloatingSheet(onDismiss) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 18.dp, bottom = 22.dp)) {
             Text("Privacy", fontFamily = RoundedHeavy, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)
             Spacer(Modifier.height(4.dp))
             Text("Stored only on this device", color = c.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.2.sp, modifier = Modifier.padding(top = 14.dp, bottom = 4.dp))

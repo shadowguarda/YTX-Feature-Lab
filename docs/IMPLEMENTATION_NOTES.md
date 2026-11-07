@@ -27,3 +27,13 @@
 
 ## Testing status
 CI (`build.yml`) compiles the release build and runs the unit tests. No feature in this document has been run on a device.
+
+## 2.9.2: imported zip modules
+
+Two uploaded forks (2.9.1 and 2.9.2) were merged in. All 19 new Kotlin modules compile and their
+bundled unit tests pass in CI, and their settings screens are reachable from Settings, Labs.
+Fixes made while merging: renamed clashing `setX` functions and duplicate enums, switched the
+auto-preset rule to check video type before the over-broad `isMusicTrack`, corrected one wrong test
+expectation, and kept the richer `FrameStep`. Not wired into playback or feeds yet (settings are
+stored, but most do not yet change behaviour): app-lock overlay, floating playback toolbar,
+home discovery banner, music visualizer. Nothing has been run on a device.
