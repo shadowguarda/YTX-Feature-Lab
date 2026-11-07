@@ -59,7 +59,7 @@ fun LabsHubSheet(
     val c = MaterialTheme.colorScheme
     val dismiss = { area = null }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.surfaceContainerLow) {
+    FloatingSheet(onDismiss) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
             Text("Labs", fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)
             Text(

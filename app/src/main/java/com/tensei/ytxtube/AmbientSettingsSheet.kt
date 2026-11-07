@@ -50,7 +50,7 @@ private fun previewFrame(): Bitmap {
 @Composable
 fun AmbientSettingsSheet(onDismiss: () -> Unit) {
     val c = MaterialTheme.colorScheme
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.surfaceContainerLow) {
+    FloatingSheet(onDismiss) {
         Column(
             Modifier
                 .verticalScroll(rememberScrollState())
