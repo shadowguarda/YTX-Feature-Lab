@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /** A persisted on/off tweak. Reads are observable, so the UI follows changes at once. */
-class BoolTweak(private val key: String, private val default: Boolean) {
+class BoolTweak(val key: String, private val default: Boolean) {
     var value by mutableStateOf(default)
         private set
 
@@ -42,7 +42,7 @@ class BoolTweak(private val key: String, private val default: Boolean) {
 }
 
 /** A persisted text tweak. */
-class StringTweak(private val key: String, private val default: String) {
+class StringTweak(val key: String, private val default: String) {
     var value by mutableStateOf(default)
         private set
 
@@ -51,7 +51,7 @@ class StringTweak(private val key: String, private val default: String) {
 }
 
 /** A persisted number tweak. */
-class IntTweak(private val key: String, private val default: Int) {
+class IntTweak(val key: String, private val default: Int) {
     var value by mutableIntStateOf(default)
         private set
 
@@ -153,6 +153,18 @@ object Tweaks {
         defaultSpeedX100, skipFirstSec, cellularCapP, maxAgeDays, startTab, textScale, uiScale, thumbWidthDp, titleLines,
         captionSize, captionBgAlpha, spinnerSpeed,
     )
+
+    /**
+     * Every tweak key with its stored type ('b' boolean, 'i' int, 's' string). Used to validate
+     * imported profiles so a wrong-typed value can never be written over a real setting.
+     */
+    internal val keyTypes: Map<String, Char> by lazy {
+        buildMap {
+            bools.forEach { put(it.key, 'b') }
+            ints.forEach { put(it.key, 'i') }
+            listOf(captionLang, captionColor, spinnerStyle).forEach { put(it.key, 's') }
+        }
+    }
 
     fun init(context: Context) {
         val p = context.getSharedPreferences("tweaks", Context.MODE_PRIVATE).also { prefs = it }
