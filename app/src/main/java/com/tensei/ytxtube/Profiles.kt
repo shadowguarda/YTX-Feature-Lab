@@ -139,7 +139,7 @@ fun ProfilesSheet(onDismiss: () -> Unit) {
     var hex by remember { mutableStateOf(ThemeSettings.seed.orEmpty()) }
 
     FloatingSheet(onDismiss) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(bottom = 28.dp)) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 18.dp, bottom = 22.dp)) {
             Text("Profiles and backup", fontFamily = RoundedHeavy, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)
             if (message.isNotBlank()) Text(message, color = c.primary, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
 

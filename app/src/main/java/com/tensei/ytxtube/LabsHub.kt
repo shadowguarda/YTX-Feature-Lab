@@ -60,7 +60,7 @@ fun LabsHubSheet(
     val dismiss = { area = null }
 
     FloatingSheet(onDismiss) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(top = 18.dp, bottom = 22.dp)) {
             Text("Labs", fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)
             Text(
                 "Experimental modules. Built and unit-tested in CI, not yet checked on a device.",

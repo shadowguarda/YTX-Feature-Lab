@@ -288,7 +288,7 @@ fun TweaksSheet(onDismiss: () -> Unit) {
     val c = MaterialTheme.colorScheme
     FloatingSheet(onDismiss) {
         Column(
-            Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(bottom = 28.dp),
+            Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 18.dp, bottom = 22.dp),
         ) {
             Text("YTX Tweaks", fontFamily = RoundedHeavy, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)
             Spacer(Modifier.height(4.dp))
