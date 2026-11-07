@@ -77,6 +77,12 @@ object Profiles {
         return out
     }
 
+    /**
+     * Applies a look profile. Only known keys are written, and each value is converted to the type
+     * that setting is stored as ([ProfileRules]). Unknown keys and values that cannot be converted
+     * are skipped, so a hand-edited or pasted profile can never leave a setting with the wrong
+     * type (which would crash the app on the next start). Returns how many settings were written.
+     */
     fun apply(context: Context, json: JSONObject): Int {
         val tweaks = context.getSharedPreferences("tweaks", Context.MODE_PRIVATE).edit()
         val look = context.getSharedPreferences("appearance", Context.MODE_PRIVATE).edit()
@@ -88,12 +94,12 @@ object Profiles {
                 else -> return@forEach
             }
             val name = key.substring(2)
-            when (val v = json.get(key)) {
-                is Boolean -> editor.putBoolean(name, v)
-                is Int -> editor.putInt(name, v)
-                is Long -> editor.putInt(name, v.toInt())
-                is Double -> editor.putFloat(name, v.toFloat())
-                is String -> editor.putString(name, v)
+            val typed = ProfileRules.typedValue(key, json.opt(key)) ?: return@forEach
+            when (typed) {
+                is Boolean -> editor.putBoolean(name, typed)
+                is Int -> editor.putInt(name, typed)
+                is Float -> editor.putFloat(name, typed)
+                is String -> editor.putString(name, typed)
                 else -> return@forEach
             }
             count++
@@ -127,6 +133,40 @@ object Profiles {
     }
 
     fun isHexColour(text: String) = Regex("^#?[0-9a-fA-F]{6}$").matches(text.trim())
+}
+
+/**
+ * Which settings a look profile may change and what type each is stored as. Pure Kotlin so it can
+ * be unit tested. Keys are "t:<tweak key>" or "a:<appearance key>".
+ */
+internal object ProfileRules {
+    private val appearanceTypes: Map<String, Char> = mapOf(
+        "mode" to 's', "seed" to 's',
+        "ambient_light" to 'b', "ambient_fill_bands" to 'b', "ambient_status_bar" to 'b',
+        "ambient_intensity" to 'f', "ambient_reach" to 'f', "ambient_saturation" to 'f', "ambient_fill_dim" to 'f',
+        "ambient_blur" to 'i', "ambient_interval" to 'i', "ambient_fade" to 'i',
+    )
+
+    /** The storage type for a profile key, or null when the key is not one a profile may set. */
+    fun typeOf(key: String, tweakTypes: Map<String, Char> = Tweaks.keyTypes): Char? = when {
+        key.startsWith("t:") -> tweakTypes[key.substring(2)]
+        key.startsWith("a:") -> appearanceTypes[key.substring(2)]
+        else -> null
+    }
+
+    /** [value] converted to the setting's type (Boolean, Int, Float or String), or null to skip it. */
+    fun typedValue(key: String, value: Any?, tweakTypes: Map<String, Char> = Tweaks.keyTypes): Any? {
+        val type = typeOf(key, tweakTypes) ?: return null
+        return when (type) {
+            'b' -> value as? Boolean
+            's' -> (value as? String)?.takeIf { it.length <= 64 }
+            'i' -> (value as? Number)?.toDouble()
+                ?.takeIf { it.isFinite() && it == Math.rint(it) && Math.abs(it) <= Int.MAX_VALUE }
+                ?.toInt()
+            'f' -> (value as? Number)?.toFloat()?.takeIf { it.isFinite() }
+            else -> null
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
