@@ -39,6 +39,8 @@ private enum class LabArea(val title: String) {
     PRIVACY("Privacy"), PREMIUM("Loading and extras"),
     GLASS("Glass studio"), VIDEO("Video studio"), AI("AI tools"), OFFLINE("Offline"),
     DISCOVERY("Discovery"), PRO_MUSIC("Music studio"), AUTOMATION("Automation"), PERF("Performance"),
+    LAYOUT("Player layout"), SCOPED_THEME("Scoped themes"), HOME_ORDER("Home order"),
+    CROSSFADE("Crossfade & folders"), OFFLINE_QUEUE("Offline collections"), SUB_FOLDERS("Subscription folders"),
 }
 
 /**
@@ -90,6 +92,14 @@ fun LabsHubSheet(
                 LabArea.PRO_MUSIC -> if (player != null) ProfessionalMusicStudioSheet(player, dismiss)
                 LabArea.AUTOMATION -> AutomationAndPrivacySheet(onDismiss = dismiss)
                 LabArea.PERF -> if (player != null) PerformanceAndExperimentalSheet(player, dismiss)
+                LabArea.LAYOUT -> PlayerLayoutCustomizerSheet(onDismiss = dismiss)
+                LabArea.SCOPED_THEME -> ScopedThemeSheet(onDismiss = dismiss)
+                LabArea.HOME_ORDER -> HomeDashboardReorderSheet(onDismiss = dismiss)
+                LabArea.CROSSFADE -> MusicFoldersAndCrossfadeSheet(onDismiss = dismiss)
+                LabArea.OFFLINE_QUEUE -> OfflineCollectionsSheet(tasks = Downloads.tasks.toList(), onDismiss = dismiss)
+                LabArea.SUB_FOLDERS -> if (lib != null) {
+                    SubscriptionFoldersSheet(channels = lib.channels, onImportChannels = {}, onDismiss = dismiss)
+                }
                 null -> {}
             }
         }

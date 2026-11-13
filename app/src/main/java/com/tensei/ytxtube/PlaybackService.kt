@@ -57,6 +57,7 @@ import java.util.concurrent.Executors
 class PlaybackService : MediaSessionService() {
 
     private var session: MediaSession? = null
+    private val crossfadeController = MusicCrossfadeController()
     private val resolver = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(2))
 
     override fun onCreate() {
@@ -121,6 +122,9 @@ class PlaybackService : MediaSessionService() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         PlayerBridge.exo = player
+        crossfadeController.attach(player, MusicFoldersManager.crossfadeConfig) {
+            if (player.hasNextMediaItem()) player.seekToNextMediaItem()
+        }
         SkipSilence.applyTo(player)
         player.setVideoFrameMetadataListener { _, releaseTimeNs, _, _ -> AvSync.onFrameReleased(releaseTimeNs) }
         player.addListener(SponsorSkipper(player))
@@ -154,6 +158,7 @@ class PlaybackService : MediaSessionService() {
     private var watchTime: WatchTimeReporter? = null
 
     override fun onDestroy() {
+        crossfadeController.detach()
         PlayerBridge.exo = null
         SleepTimer.set(0)
         resumeSaver?.saveNow()
