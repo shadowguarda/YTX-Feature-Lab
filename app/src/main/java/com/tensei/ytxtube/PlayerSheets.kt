@@ -46,10 +46,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import kotlin.math.roundToInt
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.animation.core.Animatable
@@ -274,6 +277,7 @@ private fun SpeedChip(
     selected: Boolean,
     modifier: Modifier = Modifier,
     caption: String? = null,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     val c = MaterialTheme.colorScheme
@@ -282,7 +286,7 @@ private fun SpeedChip(
         animationSpec = tween(180),
         label = "speedChipFill",
     )
-    Column(modifier.pressable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier.pressable(enabled = enabled, onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier
                 .fillMaxWidth()
@@ -454,7 +458,7 @@ fun EqualizerSheet(backdrop: Backdrop, onDismiss: () -> Unit) {
     val c = MaterialTheme.colorScheme
     val preset = AudioEffects.preset
     val gains = remember { List(EqHz.size) { Animatable(0f) } }
-    LaunchedEffect(preset) {
+    LaunchedEffect(preset, AudioEffects.customVersion) {
         EqHz.forEachIndexed { i, hz ->
             val target = AudioEffects.previewGainMb(preset, hz) / 100f
             launch { gains[i].animateTo(target, spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessLow)) }
@@ -470,7 +474,7 @@ fun EqualizerSheet(backdrop: Backdrop, onDismiss: () -> Unit) {
             val labelH = 18.dp.toPx()
             val plotH = size.height - labelH
             val mid = plotH / 2f
-            val span = 8f // dB shown above and below the centre line
+            val span = 12f // dB shown above and below the centre line
             fun x(i: Int) = size.width * i / (EqHz.size - 1)
             fun y(db: Float) = mid - (db / span) * (mid - 6.dp.toPx())
 
@@ -510,11 +514,47 @@ fun EqualizerSheet(backdrop: Backdrop, onDismiss: () -> Unit) {
             }
         }
 
-        Spacer(Modifier.height(14.dp))
+        val ready = AudioEffects.ready
+        if (!ready) {
+            Text(
+                "Equalizer is off until something is playing. Start a video or song to use it.",
+                color = c.onSurfaceVariant, fontSize = 12.5.sp,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        Column(Modifier.fillMaxWidth().alpha(if (ready) 1f else 0.45f)) {
+            AudioEffects.bandHz.forEachIndexed { i, hz ->
+                val mb = remember(preset, AudioEffects.customVersion) { AudioEffects.bandGainMb(i) }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(eqLabel(hz), fontSize = 12.5.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(36.dp))
+                    Slider(
+                        value = (mb / 100f).coerceIn(-12f, 12f),
+                        onValueChange = { AudioEffects.setBand(i, it.roundToInt() * 100) },
+                        valueRange = -12f..12f,
+                        steps = 23,
+                        enabled = ready,
+                        colors = SliderDefaults.colors(
+                            thumbColor = c.onSurface,
+                            activeTrackColor = c.onSurface,
+                            inactiveTrackColor = c.surfaceContainerHighest,
+                        ),
+                        modifier = Modifier.weight(1f),
+                    )
+                    val db = mb / 100
+                    Text(
+                        if (db > 0) "+$db dB" else "$db dB",
+                        fontSize = 12.sp, color = c.onSurfaceVariant, textAlign = TextAlign.End,
+                        modifier = Modifier.width(54.dp),
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
         AudioEffects.Preset.entries.chunked(3).forEach { rowPresets ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 rowPresets.forEach { p ->
-                    SpeedChip(label = p.label, selected = p == preset, modifier = Modifier.weight(1f)) {
+                    SpeedChip(label = p.label, selected = p == preset, modifier = Modifier.weight(1f), enabled = ready) {
                         AudioEffects.updatePreset(p)
                     }
                 }
@@ -532,6 +572,7 @@ fun EqualizerSheet(backdrop: Backdrop, onDismiss: () -> Unit) {
                     label = if (mb == 0) "Off" else "+${mb / 100} dB",
                     selected = i == AudioEffects.boostIndex,
                     modifier = Modifier.weight(1f),
+                    enabled = ready,
                 ) { AudioEffects.setBoost(i) }
             }
         }
@@ -540,6 +581,51 @@ fun EqualizerSheet(backdrop: Backdrop, onDismiss: () -> Unit) {
             "Applies to videos and music in the main player. Shorts keep their own audio.",
             color = c.onSurfaceVariant, fontSize = 11.5.sp,
         )
+        Spacer(Modifier.height(4.dp))
+    }
+}
+
+/** Sleep timer: minute presets, "End of video" and a live countdown. */
+@Composable
+fun SleepTimerSheet(backdrop: Backdrop, onDismiss: () -> Unit) {
+    val c = MaterialTheme.colorScheme
+    PlayerGlassSheet("Sleep timer", backdrop, onDismiss) {
+        val minutesActive = SleepTimer.minutes > 0
+        val endActive = SleepTimer.active && !minutesActive
+        Text(
+            if (minutesActive) formatSleepRemaining(SleepTimer.remainingSeconds) else if (endActive) "End of video" else "Off",
+            fontFamily = RoundedHeavy,
+            fontWeight = FontWeight.Bold,
+            fontSize = 34.sp,
+            modifier = Modifier.padding(start = 6.dp, top = 4.dp),
+        )
+        Text(
+            when {
+                minutesActive -> "Playback pauses when the countdown ends, even with the app in the background."
+                endActive -> "Playback pauses when this video ends and the next one will not start."
+                else -> "Pick a time to pause playback automatically."
+            },
+            color = c.onSurfaceVariant, fontSize = 12.5.sp,
+            modifier = Modifier.padding(start = 6.dp, top = 4.dp, bottom = 14.dp),
+        )
+        SleepTimer.presets.chunked(3).forEach { rowMinutes ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                rowMinutes.forEach { m ->
+                    SpeedChip(label = "$m min", selected = SleepTimer.minutes == m, modifier = Modifier.weight(1f)) {
+                        SleepTimer.set(m)
+                    }
+                }
+                repeat(3 - rowMinutes.size) { Spacer(Modifier.weight(1f)) }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+        SpeedChip(label = "End of video", selected = endActive, modifier = Modifier.fillMaxWidth()) {
+            SleepTimer.setEndOfVideo()
+        }
+        Spacer(Modifier.height(8.dp))
+        SpeedChip(label = "Turn off", selected = false, modifier = Modifier.fillMaxWidth(), enabled = SleepTimer.active) {
+            SleepTimer.set(0)
+        }
         Spacer(Modifier.height(4.dp))
     }
 }

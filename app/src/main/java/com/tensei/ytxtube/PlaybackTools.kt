@@ -2,10 +2,14 @@ package com.tensei.ytxtube
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.SystemClock
+import androidx.annotation.OptIn
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -69,31 +73,122 @@ object SkipSilence {
     }
 }
 
-/** Pauses playback after a chosen number of minutes. Tap the setting again to step to the next value. */
+/**
+ * Pauses playback after a chosen number of minutes, or at the end of the current video.
+ * The countdown is wall-clock based, so it stays correct while the app is in the background.
+ */
+@OptIn(UnstableApi::class)
 object SleepTimer {
-    private val steps = listOf(0, 15, 30, 45, 60)
+    /** Minute presets offered in the sleep timer sheet. */
+    val presets = listOf(5, 15, 30, 45, 60)
+    private val steps = listOf(0) + presets
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var job: Job? = null
+    private var armedPlayer: ExoPlayer? = null
 
-    /** Minutes the timer was set to, or 0 when it is off. */
+    private val endListener = object : Player.Listener {
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            if (reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) {
+                endReached = true
+            } else if (playWhenReady && endReached) {
+                // The user pressed play again after the video ended: the timer is done.
+                set(0)
+            }
+        }
+    }
+
+    private var endReached by mutableStateOf(false)
+
+    /** Minutes the timer was set to, or 0 when it is off or set to the end of the video. */
     var minutes by mutableIntStateOf(0)
         private set
 
-    /** Steps to the next preset (Off, 15, 30, 45, 60, then Off again) and returns it. */
+    /** Whole seconds left on a minute timer, or 0 when none is counting down. */
+    var remainingSeconds by mutableIntStateOf(0)
+        private set
+
+    /** True while playback is set to pause when the current video ends. */
+    var endOfVideo by mutableStateOf(false)
+        private set
+
+    val active: Boolean get() = minutes > 0 || (endOfVideo && !endReached)
+
+    /** Steps to the next preset (Off, 5, 15, 30, 45, 60, then Off again) and returns it. */
     fun cycle(): Int {
+        if (endOfVideo) {
+            set(0)
+            return 0
+        }
         val next = steps[(steps.indexOf(minutes) + 1) % steps.size]
         set(next)
         return next
     }
 
     fun set(min: Int) {
-        job?.cancel()
-        minutes = min
+        clear()
         if (min <= 0) return
+        minutes = min
+        remainingSeconds = min * 60
         job = scope.launch {
-            delay(min * 60_000L)
+            val endAt = SystemClock.elapsedRealtime() + min * 60_000L
+            while (true) {
+                val left = endAt - SystemClock.elapsedRealtime()
+                if (left <= 0L) break
+                remainingSeconds = ((left + 999L) / 1000L).toInt()
+                delay(minOf(1_000L, left))
+            }
             PlayerBridge.exo?.pause()
             minutes = 0
+            remainingSeconds = 0
         }
     }
+
+    /**
+     * Called when playback ended while [endOfVideo] was set. The timer stays armed (so autoplay
+     * keeps seeing it) until the user presses play again.
+     */
+    fun markEndReached() {
+        if (endOfVideo) endReached = true
+    }
+
+    /** Pauses at the end of the current video and keeps autoplay from starting the next one. */
+    fun setEndOfVideo() {
+        clear()
+        val player = PlayerBridge.exo ?: return
+        endOfVideo = true
+        armedPlayer = player
+        player.addListener(endListener)
+        player.pauseAtEndOfMediaItems = true
+    }
+
+    private fun clear() {
+        job?.cancel()
+        job = null
+        armedPlayer?.let {
+            it.removeListener(endListener)
+            it.pauseAtEndOfMediaItems = false
+        }
+        armedPlayer = null
+        endOfVideo = false
+        endReached = false
+        minutes = 0
+        remainingSeconds = 0
+    }
+
+    /** Short text for settings rows: Off, End of video, or the time left. */
+    fun statusLabel(): String = when {
+        endOfVideo && !endReached -> "End of video"
+        minutes > 0 -> formatSleepRemaining(remainingSeconds)
+        else -> "Off"
+    }
+}
+
+/** 754 -> "12:34", 3600 -> "1:00:00". */
+internal fun formatSleepRemaining(totalSeconds: Int): String {
+    val t = totalSeconds.coerceAtLeast(0)
+    val h = t / 3600
+    val m = (t % 3600) / 60
+    val sec = t % 60
+    return if (h > 0) String.format(java.util.Locale.ROOT, "%d:%02d:%02d", h, m, sec)
+    else String.format(java.util.Locale.ROOT, "%d:%02d", m, sec)
 }

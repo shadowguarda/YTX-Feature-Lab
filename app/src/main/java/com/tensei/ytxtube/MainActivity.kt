@@ -865,6 +865,7 @@ fun YtxTubeApp() {
             PlayerSheet.Queue -> QueueSheet(player, onDismiss = { player.sheet = null })
             PlayerSheet.Chapters -> ChaptersSheet(player, onDismiss = { player.sheet = null })
             PlayerSheet.Equalizer -> Unit
+            PlayerSheet.SleepTimer -> Unit
             PlayerSheet.Speed -> Unit
             PlayerSheet.Audio -> Unit
             null -> Unit
@@ -892,6 +893,14 @@ fun YtxTubeApp() {
             exit = fadeOut(tween(150)),
         ) {
             EqualizerSheet(glassBackdrop, onDismiss = { player.sheet = null })
+        }
+
+        AnimatedVisibility(
+            visible = player.sheet == PlayerSheet.SleepTimer,
+            enter = fadeIn(tween(180, easing = Motion.Emphasized)),
+            exit = fadeOut(tween(150)),
+        ) {
+            SleepTimerSheet(glassBackdrop, onDismiss = { player.sheet = null })
         }
 
         AnimatedVisibility(

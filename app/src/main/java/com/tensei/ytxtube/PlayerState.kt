@@ -1011,6 +1011,11 @@ class PlayerState(private val scope: CoroutineScope) {
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             if (playbackState == Player.STATE_ENDED) {
+                // Sleep timer "End of video": stay paused instead of advancing or autoplaying.
+                if (SleepTimer.endOfVideo) {
+                    SleepTimer.markEndReached()
+                    return
+                }
                 val p = controller ?: return
                 if (p.repeatMode == Player.REPEAT_MODE_ONE) return
                 if (p.currentMediaItemIndex + 1 < p.mediaItemCount) {
@@ -1152,6 +1157,6 @@ fun rememberPlayerState(): PlayerState {
     return state
 }
 
-enum class PlayerSheet { Quality, Comments, Queue, Settings, Speed, Audio, Subtitles, Chapters, Equalizer }
+enum class PlayerSheet { Quality, Comments, Queue, Settings, Speed, Audio, Subtitles, Chapters, Equalizer, SleepTimer }
 
 private const val TAG = "YTXTube"

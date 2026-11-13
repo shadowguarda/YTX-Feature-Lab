@@ -1312,10 +1312,10 @@ fun PlayerSettingsSheet(state: PlayerState, backdrop: Backdrop, onDismiss: () ->
                 PlayerSettingItem(
                     icon = Icons.Rounded.Bedtime,
                     title = "Sleep timer",
-                    value = if (SleepTimer.minutes == 0) "Off" else "${SleepTimer.minutes} min",
+                    value = SleepTimer.statusLabel(),
                     onClick = {
-                        val m = SleepTimer.cycle()
-                        state.actionMessage = if (m == 0) "Sleep timer off" else "Pausing in $m min"
+                        onDismiss()
+                        state.sheet = PlayerSheet.SleepTimer
                     }
                 )
 

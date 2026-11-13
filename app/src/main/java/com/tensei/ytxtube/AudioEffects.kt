@@ -25,7 +25,15 @@ object AudioEffects {
         TrebleBoost("Treble boost"),
         Vocal("Vocal"),
         Cinema("Cinema"),
+        /** Shaped by the band sliders; always last so saved preset numbers stay valid. */
+        Custom("Custom"),
     }
+
+    /** Centre frequencies of the five equalizer sliders, in Hz. */
+    val bandHz = intArrayOf(60, 250, 1_000, 4_000, 16_000)
+
+    /** Slider range in millibels (+/- 12 dB). */
+    const val BAND_LIMIT_MB = 1_200
 
     /** Loudness boost steps in millibels (100 mB = 1 dB). Index 0 is off. */
     val boostSteps = listOf(0, 300, 600, 900, 1200)
@@ -33,6 +41,7 @@ object AudioEffects {
     private const val PREFS = "audio_effects"
     private const val KEY_PRESET = "preset"
     private const val KEY_BOOST = "boost_index"
+    private const val KEY_CUSTOM = "custom_bands"
 
     private var prefs: SharedPreferences? = null
     private var equalizer: Equalizer? = null
@@ -51,10 +60,42 @@ object AudioEffects {
     var boostIndex by mutableIntStateOf(0)
         private set
 
+    /** True once the device equalizer is attached to a playing session. */
+    var ready by mutableStateOf(false)
+        private set
+
+    /** Bumps whenever a custom band changes so the curve can redraw. */
+    var customVersion by mutableIntStateOf(0)
+        private set
+
+    private var customGains = IntArray(bandHz.size)
+
     fun init(context: Context) {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).also { prefs = it }
         preset = Preset.entries.getOrElse(p.getInt(KEY_PRESET, 0)) { Preset.Flat }
         boostIndex = p.getInt(KEY_BOOST, 0).coerceIn(0, boostSteps.lastIndex)
+        p.getString(KEY_CUSTOM, null)?.split(",")?.mapNotNull { it.trim().toIntOrNull() }
+            ?.takeIf { it.size == bandHz.size }
+            ?.let { saved -> customGains = IntArray(bandHz.size) { saved[it].coerceIn(-BAND_LIMIT_MB, BAND_LIMIT_MB) } }
+    }
+
+    /** Gain in millibels the slider for band [index] shows for the current preset. */
+    fun bandGainMb(index: Int): Int = curve(preset, bandHz[index])
+
+    /**
+     * Moves one slider. The first drag away from a preset copies that preset's shape into the
+     * custom bands, so the other sliders stay where the preset had put them.
+     */
+    fun setBand(index: Int, mb: Int) {
+        if (preset != Preset.Custom) {
+            customGains = IntArray(bandHz.size) { curve(preset, bandHz[it]) }
+            preset = Preset.Custom
+            prefs?.edit()?.putInt(KEY_PRESET, preset.ordinal)?.apply()
+        }
+        customGains[index] = mb.coerceIn(-BAND_LIMIT_MB, BAND_LIMIT_MB)
+        customVersion++
+        prefs?.edit()?.putString(KEY_CUSTOM, customGains.joinToString(","))?.apply()
+        applyEqualizer()
     }
 
     /** Called by [PlayerBridge] whenever the live player changes. */
@@ -103,6 +144,7 @@ object AudioEffects {
         } catch (_: Exception) {
             null
         }
+        ready = equalizer != null
         loudness = try {
             LoudnessEnhancer(sessionId)
         } catch (_: Exception) {
@@ -117,6 +159,7 @@ object AudioEffects {
         try { loudness?.release() } catch (_: Exception) {}
         equalizer = null
         loudness = null
+        ready = false
     }
 
     private fun applyLoudness() {
@@ -156,6 +199,7 @@ object AudioEffects {
     /** Gain in millibels for a preset at a given frequency. */
     private fun curve(preset: Preset, hz: Int): Int = when (preset) {
         Preset.Flat -> 0
+        Preset.Custom -> interpolateBandMb(bandHz, customGains, hz)
         Preset.BassBoost -> when {
             hz <= 250 -> 600
             hz <= 1000 -> 600 * (1000 - hz) / 750
@@ -178,4 +222,20 @@ object AudioEffects {
             else -> 0
         }
     }
+}
+
+/**
+ * Gain at [hz] for a curve defined by [gains] at the frequencies in [points]. Interpolates
+ * on a log-frequency axis and holds the end values outside the first and last point.
+ */
+internal fun interpolateBandMb(points: IntArray, gains: IntArray, hz: Int): Int {
+    if (hz <= points.first()) return gains.first()
+    if (hz >= points.last()) return gains.last()
+    for (i in 0 until points.lastIndex) {
+        if (hz <= points[i + 1]) {
+            val t = (Math.log(hz.toDouble() / points[i]) / Math.log(points[i + 1].toDouble() / points[i])).toFloat()
+            return (gains[i] + (gains[i + 1] - gains[i]) * t).toInt()
+        }
+    }
+    return gains.last()
 }
