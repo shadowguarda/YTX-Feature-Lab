@@ -5,6 +5,9 @@ import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat as AndroidMediaFormat
 import android.media.MediaMuxer
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -12,6 +15,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -37,6 +41,9 @@ import org.schabi.newpipe.extractor.stream.VideoStream
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -77,11 +84,23 @@ class DownloadTask(
     var error by mutableStateOf<String?>(null)
         internal set
 
+    /** Smoothed transfer speed in bytes per second while downloading, 0 otherwise. */
+    var speedBps by mutableLongStateOf(0L)
+        internal set
+
     val progress: Float
         get() = when {
             status == DownloadStatus.Complete || status == DownloadStatus.Processing -> 1f
             total > 0L -> (downloaded.toFloat() / total).coerceIn(0f, 1f)
             else -> 0f
+        }
+
+    /** Seconds left, only when the speed is steady enough for an honest estimate. */
+    val etaSeconds: Long?
+        get() = if (status == DownloadStatus.Downloading && total > 0L) {
+            DownloadPolicy.etaSeconds(total - downloaded, speedBps)
+        } else {
+            null
         }
 
     val file: File get() = Downloads.fileFor(fileName)
@@ -113,12 +132,18 @@ data class DownloadOption(
 
 
 object Downloads {
-    private const val MAX_ACTIVE = 2
     private const val PERSIST_KEY = "tasks"
     private const val PREFS = "downloads"
 
     val tasks: SnapshotStateList<DownloadTask> = mutableStateListOf()
     var initialized by mutableStateOf(false)
+        private set
+
+    /**
+     * Why queued downloads are not starting (for example "Waiting for Wi-Fi"), or null when the
+     * queue is free to run. Driven by the Wi-Fi-only and schedule settings.
+     */
+    var queueBlockedReason by mutableStateOf<String?>(null)
         private set
 
     val busy: Boolean
@@ -139,11 +164,13 @@ object Downloads {
 
     private lateinit var dir: File
     private lateinit var prefs: android.content.SharedPreferences
+    private lateinit var appContext: Context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val jobs = ConcurrentHashMap<String, kotlinx.coroutines.Job>()
     private val pumpLock = Any()
     private val lastPersist = ConcurrentHashMap<String, Long>()
     private val lastReport = ConcurrentHashMap<String, Long>()
+    private val lastBytes = ConcurrentHashMap<String, Long>()
 
     private const val KEY_CUSTOM_DIR = "custom_download_dir"
 
@@ -156,6 +183,7 @@ object Downloads {
 
     fun init(context: Context) {
         if (initialized) return
+        appContext = context.applicationContext
         prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val customPath = prefs.getString(KEY_CUSTOM_DIR, null)
         val targetDir = if (!customPath.isNullOrBlank()) {
@@ -167,6 +195,28 @@ object Downloads {
         initialized = true
         restore()
         persist()
+        startWatchers()
+    }
+
+    /**
+     * Wi-Fi-only and the download schedule hold queued tasks back. Something has to wake the queue
+     * when the network changes or the schedule window opens, so listen for both.
+     */
+    private fun startWatchers() {
+        runCatching {
+            val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            cm.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) = pump()
+                override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) = pump()
+            })
+        }.onFailure { Log.w(TAG, "network watcher unavailable", it) }
+
+        scope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(30_000L)
+                if (tasks.any { it.status == DownloadStatus.Queued }) pump()
+            }
+        }
     }
 
     fun setCustomDownloadDir(newDir: File) {
@@ -336,6 +386,7 @@ object Downloads {
             task.status != DownloadStatus.Processing
         ) return
         task.status = DownloadStatus.Paused
+        task.speedBps = 0L
         jobs.remove(task.key)?.cancel()
         persist()
         pump()
@@ -347,6 +398,7 @@ object Downloads {
         task.downloaded = 0L
         task.total = -1L
         task.error = null
+        task.speedBps = 0L
         task.status = DownloadStatus.Queued
         persist()
         pump()
@@ -373,6 +425,7 @@ object Downloads {
         tasks.clear()
         lastPersist.clear()
         lastReport.clear()
+        lastBytes.clear()
         prefs.edit().putString(PERSIST_KEY, "[]").apply()
 
         runCatching { dir.listFiles()?.forEach { if (it.isFile && it.name.endsWith(".part")) it.delete() } }
@@ -391,10 +444,31 @@ object Downloads {
         }
     }
 
+    /**
+     * Starts queued tasks while there is room. Honours the user's simultaneous-download limit,
+     * task priority (oldest first within a priority), Wi-Fi-only and the download schedule.
+     * Tasks already running are never interrupted by a policy change.
+     */
     private fun pump() {
         synchronized(pumpLock) {
-            while (jobs.size < MAX_ACTIVE) {
-                val next = tasks.firstOrNull { it.status == DownloadStatus.Queued } ?: return
+            val limit = DownloadManagerAdvanced.maxSimultaneousDownloads.coerceIn(1, 4)
+            val hasQueued = tasks.any { it.status == DownloadStatus.Queued }
+            if (hasQueued && ::appContext.isInitialized &&
+                !DownloadManagerAdvanced.isDownloadAllowedNow(appContext)
+            ) {
+                queueBlockedReason = when {
+                    DownloadManagerAdvanced.wifiOnlyDownloads && DownloadManagerAdvanced.scheduleEnabled ->
+                        "Waiting for Wi-Fi or your scheduled download window"
+                    DownloadManagerAdvanced.wifiOnlyDownloads -> "Waiting for Wi-Fi"
+                    else -> "Waiting for your scheduled download window"
+                }
+                return
+            }
+            queueBlockedReason = null
+            while (jobs.size < limit) {
+                val next = DownloadPolicy.nextQueued(tasks) {
+                    DownloadManagerAdvanced.getPriority(it.key).weight
+                } ?: return
                 next.status = DownloadStatus.Downloading
                 val job = scope.launch(start = CoroutineStart.LAZY) { execute(next) }
                 jobs[next.key] = job
@@ -409,16 +483,24 @@ object Downloads {
             while (true) {
                 try {
                     runDownload(task)
+                    if (task.status == DownloadStatus.Complete) recordHistory(task)
                     return
                 } catch (e: CancellationException) {
                     throw e
                 } catch (t: Throwable) {
-                    if (attempt < 2) {
+                    val retries = DownloadPolicy.retryLimit(
+                        DownloadManagerAdvanced.autoRetryEnabled,
+                        DownloadManagerAdvanced.maxRetryCount,
+                    )
+                    if (t !is NonRetryableException && attempt < retries) {
                         attempt++
                         StreamCache.invalidate(task.videoId)
                         deleteWork(task)
                         task.downloaded = 0L
-                        kotlinx.coroutines.delay(1000L * attempt)
+                        task.speedBps = 0L
+                        lastReport.remove(task.key)
+                        lastBytes.remove(task.key)
+                        kotlinx.coroutines.delay(DownloadPolicy.backoffMs(attempt))
                         continue
                     }
                     throw t
@@ -430,14 +512,59 @@ object Downloads {
             }
         } catch (t: Throwable) {
             Log.w(TAG, "download ${task.key} failed", t)
-            task.error = t.message ?: "Download failed"
+            task.error = describe(t)
             task.status = DownloadStatus.Failed
             deleteWork(task)
         } finally {
+            task.speedBps = 0L
+            lastReport.remove(task.key)
+            lastBytes.remove(task.key)
             jobs.remove(task.key)
             persist()
             pump()
         }
+    }
+
+    private fun recordHistory(task: DownloadTask) {
+        runCatching {
+            DownloadManagerAdvanced.recordDownloadHistory(
+                title = task.title,
+                channel = task.channel,
+                bytes = task.file.length(),
+                format = if (task.height == 0) "m4a" else task.container,
+            )
+        }
+    }
+
+    /** Turns a low-level failure into something the user can act on. */
+    private fun describe(t: Throwable): String {
+        val chain = generateSequence(t) { it.cause }.take(6).toList()
+        val http = chain.filterIsInstance<HttpStatusException>().firstOrNull()
+        val message = chain.joinToString(" ") { it.message.orEmpty() }
+        return when {
+            chain.any { it is NonRetryableException } ->
+                chain.first { it is NonRetryableException }.message ?: "Download failed"
+            chain.any { it is UnknownHostException || it is ConnectException } ->
+                "No connection. Check your network, then tap retry."
+            chain.any { it is SocketTimeoutException } ->
+                "The connection timed out. Tap retry when your network is steadier."
+            http != null && (http.code == 403 || http.code == 410) ->
+                "The download link expired or was refused (HTTP ${http.code}). Tap retry to fetch a fresh link."
+            http != null && http.code == 429 ->
+                "Too many requests right now. Wait a few minutes, then tap retry."
+            message.contains("ENOSPC") || message.contains("No space left") ->
+                "The device ran out of storage. Free up some space, then tap retry."
+            else -> t.message ?: "Download failed"
+        }
+    }
+
+    /** Fails fast, with a clear message, when the file (and any muxing scratch space) won't fit. */
+    private fun requireStorage(totalBytes: Long, needsMux: Boolean) {
+        val shortfall = DownloadPolicy.storageShortfall(
+            free = DownloadPolicy.freeBytes(dir),
+            needed = DownloadPolicy.bytesNeeded(totalBytes, needsMux),
+        )
+        if (shortfall != null) throw NonRetryableException(shortfall)
     }
 
     private suspend fun runDownload(task: DownloadTask) {
@@ -452,7 +579,9 @@ object Downloads {
             work.delete()
             val remote = probe(audio.content)
             task.total = remote.total
-            val received = transfer(audio.content, work, remote) { done -> report(task, done) }
+            requireStorage(remote.total, needsMux = false)
+            val done = AtomicLong(0)
+            val received = transfer(audio.content, work, remote) { n -> report(task, done.addAndGet(n)) }
             if (received != remote.total || work.length() != remote.total) {
                 throw IOException("Audio download incomplete (${work.length()} of ${remote.total} bytes)")
             }
@@ -478,7 +607,9 @@ object Downloads {
             work.delete()
             val remote = probe(muxed.content)
             task.total = remote.total
-            val received = transfer(muxed.content, work, remote) { done -> report(task, done) }
+            requireStorage(remote.total, needsMux = false)
+            val done = AtomicLong(0)
+            val received = transfer(muxed.content, work, remote) { n -> report(task, done.addAndGet(n)) }
             if (received != remote.total || work.length() != remote.total) {
                 throw IOException("Download incomplete (${work.length()} of ${remote.total} bytes)")
             }
@@ -502,6 +633,7 @@ object Downloads {
             val vRemote = probe(video.content)
             val aRemote = probe(audio.content)
             task.total = vRemote.total + aRemote.total
+            requireStorage(task.total, needsMux = true)
             val vDone = AtomicLong(0)
             val aDone = AtomicLong(0)
             coroutineScope {
@@ -542,12 +674,20 @@ object Downloads {
         Log.i(TAG, "download ${task.key} complete: ${task.file.length()} bytes")
     }
 
+    /** [done] is the cumulative number of bytes received so far across all lanes of the task. */
     private fun report(task: DownloadTask, done: Long) {
         val now = SystemClock.elapsedRealtime()
         val last = lastReport[task.key] ?: 0L
         if (now - last >= 120L) {
             lastReport[task.key] = now
-            task.downloaded = done.coerceAtMost(if (task.total > 0) task.total else done)
+            val shown = done.coerceAtMost(if (task.total > 0) task.total else done)
+            val previous = lastBytes[task.key]
+            if (last != 0L && previous != null && now > last) {
+                val instant = (shown - previous).coerceAtLeast(0L) * 1000L / (now - last)
+                task.speedBps = DownloadPolicy.smoothSpeed(task.speedBps, instant)
+            }
+            lastBytes[task.key] = shown
+            task.downloaded = shown
             val lastSaved = lastPersist[task.key] ?: 0L
             if (now - lastSaved >= 2_000L) {
                 lastPersist[task.key] = now
@@ -945,6 +1085,9 @@ object Downloads {
     }
 
     private class HttpStatusException(val code: Int) : IOException("HTTP $code")
+
+    /** A failure that retrying cannot fix (for example, not enough free storage). */
+    private class NonRetryableException(message: String) : IOException(message)
 }
 
 
