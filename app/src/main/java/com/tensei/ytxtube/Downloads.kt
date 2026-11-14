@@ -378,8 +378,14 @@ object Downloads {
         runCatching { dir.listFiles()?.forEach { if (it.isFile && it.name.endsWith(".part")) it.delete() } }
     }
 
-    /** Permanently deletes YTXTube-managed downloads and temporary work files only. */
-    fun deleteAllDownloadsAndWork() {
+    /** Stops active downloads, then deletes YTXTube-managed media and temporary files only. */
+    suspend fun deleteAllDownloadsAndWork() {
+        // Wait for active writers to stop before deleting their files; otherwise a cancelled
+        // transfer could still be writing while cleanup runs.
+        val activeJobs = jobs.values.toList()
+        activeJobs.forEach { it.cancel() }
+        activeJobs.forEach { it.join() }
+
         // clearAll() removes task-owned media and .part files. Do not sweep the whole
         // user-selected directory: it may contain unrelated files owned by the user.
         clearAll()
