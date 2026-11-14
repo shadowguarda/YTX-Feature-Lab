@@ -9,10 +9,6 @@ on:
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
-    # InnerTubeParseTest.sharpenYtcChannelAvatar was already failing when this job was added
-    # (main never ran unit tests in CI). It stays visible in the report and the PR comment, but
-    # does not turn the whole workflow red until the avatar rule is settled.
-    continue-on-error: true
     permissions:
       contents: read
       pull-requests: write
@@ -55,7 +51,8 @@ jobs:
           path: app/build/reports/tests/testDebugUnitTest/
           if-no-files-found: ignore
 
-  assemble-release:
+  assemble-debug:
+    needs: unit-tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,10 +64,10 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build release APK
-        run: ./gradlew :app:assembleRelease --stacktrace
+      - name: Build debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ytxtube-release-apk
-          path: app/build/outputs/apk/release/*.apk
+          name: ytxtube-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
