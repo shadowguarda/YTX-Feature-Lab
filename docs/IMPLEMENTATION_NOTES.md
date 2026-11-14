@@ -25,6 +25,15 @@
 - All options live in `Tweaks` (persisted, observable) and are read at the point of use: `startPlayback` (default speed, skip first seconds, auto captions), `StreamSelection` via `Tweaks.cappedHeight` (mobile-data quality cap, uses `isActiveNetworkMetered`), `VideoRow` (thumbnail width, title lines, views, upload date, duration), the theme root (text and interface scale through `LocalDensity`), history stores (incognito and pausing gate `SearchHistory`, `ResumeStore`, `RecentMusic`, `Discovery`, `QueueStore`, `UsageStats`), and the video gesture handler.
 - Limits: interface size changes density for the whole app, so very large text plus 110% interface size can crowd small screens; the mobile-data cap applies when the stream is resolved, not mid-playback; "Preload" off disables prefetching of feeds, related videos, Shorts and rows.
 
+## Planning features: Watch plan, Insights, Focus guard, Autopilot, Time-fit
+Files: `WatchPlan.kt`, `WatchLog.kt`, `FocusGuard.kt`, `ChapterAutopilot.kt`, `TimeFitQueue.kt`, shared widgets in `YtxLabUi.kt`. All are reached from Labs and all decisions live in pure `*Logic` objects covered by `YtxPlanningFeaturesTest`.
+- Watch plan: `WatchPlanManager` (prefs `watch_plan`) schedules an inexact `AlarmManager` alarm per item; `WatchPlanReceiver` posts the notification. Alarms are re-armed in `Application.onCreate`, not on boot.
+- Watch insights: `WatchSessionTracker` (started in `PlaybackService`) records playing time per video through a `Player.Listener`; sessions within 30 s of each other for the same video merge. Skipped when incognito or history pausing is on.
+- Focus guard: `FocusGuardTicker` ticks every 5 s while the service runs; a day change resets the counters; two idle minutes count as a break.
+- Chapter autopilot: `ChapterAutopilotEffect` runs in `MainActivity` and polls the position; a skipped chapter is remembered per video so rewinding is not fought.
+- Time-fit queue: `TimeFitLogic.select` filters (live, too short, too long, watched, duplicates), ranks by interest words, favourite channels and planned items, then fills the budget greedily. Starting playback waits for the first video to load before queueing the rest.
+- Not verified: none of this has been compiled or run in the authoring environment (no Android SDK); CI is the first build.
+
 ## Testing status
 CI (`build.yml`) compiles the release build and runs the unit tests. No feature in this document has been run on a device.
 

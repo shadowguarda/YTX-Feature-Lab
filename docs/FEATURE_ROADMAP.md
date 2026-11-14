@@ -22,3 +22,8 @@ Status key: **Implemented** = in a release and built by CI; **Partial** = exists
 | J. Settings search | Search box that jumps to the matching setting; player-only options show where to find them | Implemented | Device-tested: no |
 | Feeds | Hide Shorts/live/watched/short/long/low-view videos; search filters | Implemented | |
 | Watch page | Share at time, copy link, open in browser, mark watched, like/dislike bar | Implemented | |
+| K. Planning | Watch plan: schedule videos with reminder notifications (Labs, Watch plan) | Implemented | Inexact alarms, re-armed when the app starts, so reminders set before a reboot arrive late until the app is opened. Device-tested: no |
+| K. Planning | Watch insights: on-device watch log, charts, streak, history search (Labs, Watch insights) | Implemented | Kept 120 days, never uploaded; off when history is paused. Device-tested: no |
+| K. Planning | Focus guard: daily budget and break nudges (Labs, Focus guard) | Implemented | Nudges are toasts, not a hard block. Device-tested: no |
+| K. Planning | Chapter autopilot: skip/speed chapters by keyword (Labs, Chapter autopilot) | Implemented | Only works on videos that have chapters; never skips the last chapter. Device-tested: no |
+| K. Planning | Time-fit queue: build a queue that fits N minutes (Labs, Time-fit queue) | Implemented | Greedy fit, not an optimal packing; needs loaded feeds. Device-tested: no |

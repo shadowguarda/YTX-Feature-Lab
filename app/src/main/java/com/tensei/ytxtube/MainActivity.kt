@@ -246,6 +246,7 @@ private val MiniGap = 8.dp
 fun YtxTubeApp() {
     val c = MaterialTheme.colorScheme
     val player = rememberPlayerState()
+    ChapterAutopilotEffect(player)
     val scope = rememberCoroutineScope()
     val search = remember { SearchState(scope) }
     val lib = remember { LibraryData(scope) }

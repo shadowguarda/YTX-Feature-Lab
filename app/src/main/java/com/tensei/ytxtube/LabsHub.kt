@@ -41,6 +41,7 @@ private enum class LabArea(val title: String) {
     DISCOVERY("Discovery"), PRO_MUSIC("Music studio"), AUTOMATION("Automation"), PERF("Performance"),
     LAYOUT("Player layout"), SCOPED_THEME("Scoped themes"), HOME_ORDER("Home order"),
     CROSSFADE("Crossfade & folders"), OFFLINE_QUEUE("Offline collections"), SUB_FOLDERS("Subscription folders"),
+    PLAN("Watch plan"), INSIGHTS("Watch insights"), FOCUS("Focus guard"), AUTOPILOT("Chapter autopilot"), TIMEFIT("Time-fit queue"),
 }
 
 /**
@@ -100,6 +101,11 @@ fun LabsHubSheet(
                 LabArea.SUB_FOLDERS -> if (lib != null) {
                     SubscriptionFoldersSheet(channels = lib.channels, onImportChannels = {}, onDismiss = dismiss)
                 }
+                LabArea.PLAN -> WatchPlanSheet(player = player, onOpenVideo = onOpenVideo, onDismiss = dismiss)
+                LabArea.INSIGHTS -> WatchInsightsSheet(onOpenVideo = onOpenVideo, onDismiss = dismiss)
+                LabArea.FOCUS -> FocusGuardSheet(onDismiss = dismiss)
+                LabArea.AUTOPILOT -> ChapterAutopilotSheet(player = player, onDismiss = dismiss)
+                LabArea.TIMEFIT -> TimeFitSheet(player = player, lib = lib, onDismiss = dismiss)
                 null -> {}
             }
         }

@@ -27,6 +27,11 @@ A lightweight YouTube and YouTube Music client with a modern Liquid Glass UI, ad
 - Settings search that jumps to the matching setting, and a Privacy sheet: clear history, see what stays on the device and what is sent out
 - DeArrow titles and blocked keywords / channels
 - Faster starts: the first videos in every feed and the next-up videos are resolved ahead of the tap, and the video server connection is pre-warmed
+- Watch plan: schedule a video for later (quick times or any date) and get a reminder notification that opens it
+- Watch insights: private on-device watch log with a daily chart, time-of-day histogram, top channels, streak and searchable history (honours incognito and history pausing)
+- Focus guard: optional daily watch-time budget and "take a break" nudges, with a one-tap extra five minutes
+- Chapter autopilot: skip or speed up chapters by keyword (sponsor, ad, intro, recap, your own words), once per chapter so you can rewind
+- Time-fit queue: tell it how long you have and it builds a queue from your feeds and plan that never goes over that time
 - Android TV support too: the same APK runs on TV with full D-pad navigation
 
 ## Download

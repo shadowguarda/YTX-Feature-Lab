@@ -58,6 +58,8 @@ class PlaybackService : MediaSessionService() {
 
     private var session: MediaSession? = null
     private val crossfadeController = MusicCrossfadeController()
+    private var watchTracker: WatchSessionTracker? = null
+    private var focusTicker: FocusGuardTicker? = null
     private val resolver = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(2))
 
     override fun onCreate() {
@@ -125,6 +127,8 @@ class PlaybackService : MediaSessionService() {
         crossfadeController.attach(player, MusicFoldersManager.crossfadeConfig) {
             if (player.hasNextMediaItem()) player.seekToNextMediaItem()
         }
+        watchTracker = WatchSessionTracker(player).also { it.start() }
+        focusTicker = FocusGuardTicker(this, player).also { it.start() }
         SkipSilence.applyTo(player)
         player.setVideoFrameMetadataListener { _, releaseTimeNs, _, _ -> AvSync.onFrameReleased(releaseTimeNs) }
         player.addListener(SponsorSkipper(player))
@@ -159,6 +163,8 @@ class PlaybackService : MediaSessionService() {
 
     override fun onDestroy() {
         crossfadeController.detach()
+        focusTicker?.stop()
+        watchTracker?.stop()
         PlayerBridge.exo = null
         SleepTimer.set(0)
         resumeSaver?.saveNow()
