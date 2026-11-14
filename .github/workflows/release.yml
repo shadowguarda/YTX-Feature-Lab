@@ -29,31 +29,39 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Run unit tests
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
       - name: Prepare signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           SECRET_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           SECRET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           SECRET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        shell: bash
         run: |
+          set -euo pipefail
+          for secret_name in KEYSTORE_BASE64 SECRET_STORE_PASSWORD SECRET_KEY_ALIAS SECRET_KEY_PASSWORD; do
+            if [ -z "${!secret_name}" ]; then
+              echo "::error::Missing required GitHub secret for release signing: ${secret_name}"
+              exit 1
+            fi
+          done
+
           KS="$RUNNER_TEMP/release.jks"
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "Using repository signing key."
-            echo "$KEYSTORE_BASE64" | base64 -d > "$KS"
-            STORE_PASS="$SECRET_STORE_PASSWORD"; ALIAS="$SECRET_KEY_ALIAS"; KEY_PASS="$SECRET_KEY_PASSWORD"
-          else
-            echo "No signing secrets configured: generating a one-off key for this build."
-            STORE_PASS="$(openssl rand -hex 12)"; KEY_PASS="$STORE_PASS"; ALIAS="ytxfeaturelab"
-            keytool -genkeypair -keystore "$KS" -alias "$ALIAS" -keyalg RSA -keysize 2048 \
-              -validity 10000 -storepass "$STORE_PASS" -keypass "$KEY_PASS" \
-              -dname "CN=YTXTube, O=shadowguarda"
-          fi
-          echo "::add-mask::$STORE_PASS"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KS"
+          test -s "$KS"
+          chmod 600 "$KS"
+          keytool -list -keystore "$KS" -storepass "$SECRET_STORE_PASSWORD" \
+            -alias "$SECRET_KEY_ALIAS" >/dev/null
+
+          echo "::add-mask::$SECRET_STORE_PASSWORD"
+          echo "::add-mask::$SECRET_KEY_PASSWORD"
           {
             echo "KEYSTORE_PATH=$KS"
-            echo "KEYSTORE_PASSWORD=$STORE_PASS"
-            echo "KEY_ALIAS=$ALIAS"
-            echo "KEY_PASSWORD=$KEY_PASS"
+            echo "KEYSTORE_PASSWORD=$SECRET_STORE_PASSWORD"
+            echo "KEY_ALIAS=$SECRET_KEY_ALIAS"
+            echo "KEY_PASSWORD=$SECRET_KEY_PASSWORD"
           } >> "$GITHUB_ENV"
 
       - name: Build signed release APK
