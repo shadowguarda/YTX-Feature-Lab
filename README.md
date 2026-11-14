@@ -27,6 +27,7 @@ A lightweight YouTube and YouTube Music client with a modern Liquid Glass UI, ad
 - Settings search that jumps to the matching setting, and a Privacy sheet: clear history, see what stays on the device and what is sent out
 - DeArrow titles and blocked keywords / channels
 - Faster starts: the first videos in every feed and the next-up videos are resolved ahead of the tap, and the video server connection is pre-warmed
+- Downloads library: search, sort (recent, title, channel, largest, longest), group by channel, storage summary with free space, multi-select delete, pause/resume/retry all, and display options (row size, thumbnails) that are saved
 - Watch plan: schedule a video for later (quick times or any date) and get a reminder notification that opens it
 - Watch insights: private on-device watch log with a daily chart, time-of-day histogram, top channels, streak and searchable history (honours incognito and history pausing)
 - Focus guard: optional daily watch-time budget and "take a break" nudges, with a one-tap extra five minutes

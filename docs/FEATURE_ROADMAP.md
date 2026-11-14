@@ -27,3 +27,4 @@ Status key: **Implemented** = in a release and built by CI; **Partial** = exists
 | K. Planning | Focus guard: daily budget and break nudges (Labs, Focus guard) | Implemented | Nudges are toasts, not a hard block. Device-tested: no |
 | K. Planning | Chapter autopilot: skip/speed chapters by keyword (Labs, Chapter autopilot) | Implemented | Only works on videos that have chapters; never skips the last chapter. Device-tested: no |
 | K. Planning | Time-fit queue: build a queue that fits N minutes (Labs, Time-fit queue) | Implemented | Greedy fit, not an optimal packing; needs loaded feeds. Device-tested: no |
+| C. Offline | Downloads tab: search, sort, group by channel, storage summary, multi-select delete, bulk pause/resume/retry/clear, density/thumbnail/summary options | Implemented | Retry restarts the file from zero (existing resume behaviour). Device-tested: no |

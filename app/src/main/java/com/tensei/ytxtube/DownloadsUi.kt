@@ -226,12 +226,69 @@ fun DownloadsScreen(
     scrollToTop: Int = 0,
 ) {
     val tasks = Downloads.tasks
-
+    val context = LocalContext.current
+    remember { DownloadsViewPrefs.init(context) }
 
     var section by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(0) }
+    var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var selecting by remember { mutableStateOf(false) }
+    var selection by remember { mutableStateOf(emptySet<String>()) }
+    var showCustomize by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
+    var confirmClear by remember { mutableStateOf(false) }
+
     val videos = tasks.filter { it.height > 0 }
     val music = tasks.filter { it.height == 0 }
-    val shown = if (section == 0) videos else music
+    val sectionTasks = if (section == 0) videos else music
+    val entries = sectionTasks.map { t ->
+        DownloadEntry(t.key, t.title, t.channel, maxOf(t.total, t.downloaded), t.durationSec, tasks.indexOf(t))
+    }
+    val byKey = sectionTasks.associateBy { it.key }
+    val visible = DownloadsViewLogic.filterAndSort(entries, query, DownloadsViewPrefs.sort)
+    val shown = visible.mapNotNull { byKey[it.key] }
+    val finishedAll = sectionTasks.filter { it.status == DownloadStatus.Complete }
+    val freeBytes = remember(tasks.size, finishedAll.size) { DownloadsViewLogic.freeBytes(Downloads.currentDownloadDir) }
+    val finishedBytes = DownloadsViewLogic.totalBytes(
+        entries.filter { e -> byKey[e.key]?.status == DownloadStatus.Complete },
+    )
+    val compact = DownloadsViewPrefs.density == DownloadDensity.Compact
+    val showThumbs = DownloadsViewPrefs.showThumbnails
+
+    androidx.compose.runtime.LaunchedEffect(tasks.size, section) {
+        selection = DownloadsViewLogic.retain(selection, sectionTasks.map { it.key })
+    }
+    androidx.compose.runtime.LaunchedEffect(section) { selecting = false; selection = emptySet() }
+
+    if (confirmDelete) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete ${selection.size} download${if (selection.size == 1) "" else "s"}?") },
+            text = { Text("The files are removed from this device.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    sectionTasks.filter { it.key in selection }.forEach { Downloads.remove(it) }
+                    selection = emptySet(); selecting = false; confirmDelete = false
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+        )
+    }
+    if (confirmClear) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmClear = false },
+            title = { Text("Clear finished downloads?") },
+            text = { Text("All ${finishedAll.size} finished ${if (section == 0) "videos" else "songs"} are removed from this device.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    finishedAll.forEach { Downloads.remove(it) }
+                    confirmClear = false
+                }) { Text("Clear", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmClear = false }) { Text("Cancel") } },
+        )
+    }
+    if (showCustomize) DownloadsCustomizeSheet(onDismiss = { showCustomize = false })
+
     CollapsingHeaderLayout(
         resetKey = scrollToTop to listOf(tasks.size, tasks.count { it.status == DownloadStatus.Complete }),
         header = { ScreenHeader(title = "Downloads") { HeaderActions(onSearch, onAccount) } },
@@ -246,7 +303,69 @@ fun DownloadsScreen(
                     DownloadSectionPill("Music", music.size, section == 1) { section = 1 }
                 }
             }
-            if (shown.isEmpty()) {
+            if (sectionTasks.isNotEmpty()) {
+                if (DownloadsViewPrefs.showStorage) {
+                    item(key = "summary") {
+                        DownloadsSummaryCard(
+                            count = finishedAll.size,
+                            bytes = finishedBytes,
+                            freeBytes = freeBytes,
+                            activeCount = sectionTasks.size - finishedAll.size,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                        )
+                    }
+                }
+                item(key = "toolbar") {
+                    DownloadsToolbar(
+                        query = query,
+                        onQuery = { query = it },
+                        sort = DownloadsViewPrefs.sort,
+                        onSort = { DownloadsViewPrefs.setSort(it) },
+                        selecting = selecting,
+                        canSelect = shown.isNotEmpty(),
+                        onToggleSelect = { selecting = !selecting; selection = emptySet() },
+                        onCustomize = { showCustomize = true },
+                    )
+                }
+                item(key = "bulk") {
+                    Spacer(Modifier.height(8.dp))
+                    if (selecting) {
+                        DownloadsSelectionBar(
+                            selectedCount = selection.size,
+                            total = shown.size,
+                            onSelectAll = {
+                                selection = if (selection.size == shown.size) emptySet() else shown.map { it.key }.toSet()
+                            },
+                            onDelete = { confirmDelete = true },
+                        )
+                    } else {
+                        DownloadsBulkBar(
+                            activeCount = sectionTasks.count {
+                                it.status == DownloadStatus.Downloading || it.status == DownloadStatus.Queued ||
+                                    it.status == DownloadStatus.Processing
+                            },
+                            pausedCount = sectionTasks.count { it.status == DownloadStatus.Paused },
+                            failedCount = sectionTasks.count { it.status == DownloadStatus.Failed },
+                            finishedCount = finishedAll.size,
+                            onPauseAll = {
+                                sectionTasks.filter {
+                                    it.status == DownloadStatus.Downloading || it.status == DownloadStatus.Queued ||
+                                        it.status == DownloadStatus.Processing
+                                }.forEach { Downloads.pause(it) }
+                            },
+                            onResumeAll = {
+                                sectionTasks.filter { it.status == DownloadStatus.Paused }.forEach { Downloads.resume(it) }
+                            },
+                            onRetryFailed = {
+                                sectionTasks.filter { it.status == DownloadStatus.Failed }.forEach { Downloads.resume(it) }
+                            },
+                            onClearFinished = { confirmClear = true },
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                }
+            }
+            if (sectionTasks.isEmpty()) {
                 item(key = "empty") {
                     Box(Modifier.fillMaxWidth().padding(top = 28.dp)) {
                         EmptyState(
@@ -266,25 +385,57 @@ fun DownloadsScreen(
                         )
                     }
                 }
+            } else if (shown.isEmpty()) {
+                item(key = "nomatch") {
+                    Box(Modifier.fillMaxWidth().padding(top = 28.dp)) {
+                        EmptyState(
+                            icon = if (section == 0) Icons.Rounded.Download else Icons.Rounded.MusicNote,
+                            title = "No matches",
+                            body = "Nothing in your downloads matches \"${query.trim()}\".",
+                            action = { PillButton("Clear search", { query = "" }) },
+                        )
+                    }
+                }
             } else {
                 val active = shown.filter { it.status != DownloadStatus.Complete }
                 val finished = shown.filter { it.status == DownloadStatus.Complete }
+                val open: (DownloadTask) -> Unit = { task ->
+                    if (section == 0) onOpen(task.toVideoItem()) else onOpenMusic(task.toVideoItem())
+                }
                 if (active.isNotEmpty()) {
                     item(key = "activeTitle") { SectionTitle("Downloading") }
                     items(active, key = { "a-" + it.key }) { task ->
-                        DownloadRow(task, onOpen = null)
+                        DownloadRow(
+                            task, onOpen = null, compact = compact, showThumbnail = showThumbs,
+                            selecting = selecting, selected = task.key in selection,
+                            onToggle = { selection = DownloadsViewLogic.toggle(selection, task.key) },
+                        )
                     }
                 }
                 if (finished.isNotEmpty()) {
-                    item(key = "doneTitle") { SectionTitle(if (section == 0) "Videos" else "Music") }
-                    items(finished, key = { "d-" + it.key }) { task ->
-                        DownloadRow(
-                            task,
-                            onOpen = {
-                                if (section == 0) onOpen(task.toVideoItem())
-                                else onOpenMusic(task.toVideoItem())
-                            },
+                    if (DownloadsViewPrefs.groupByChannel) {
+                        val groups = DownloadsViewLogic.groupByChannel(
+                            visible.filter { byKey[it.key]?.status == DownloadStatus.Complete },
                         )
+                        groups.forEach { (channel, group) ->
+                            item(key = "g-$channel") { SectionTitle("$channel · ${group.size}") }
+                            items(group.mapNotNull { byKey[it.key] }, key = { "d-" + it.key }) { task ->
+                                DownloadRow(
+                                    task, onOpen = { open(task) }, compact = compact, showThumbnail = showThumbs,
+                                    selecting = selecting, selected = task.key in selection,
+                                    onToggle = { selection = DownloadsViewLogic.toggle(selection, task.key) },
+                                )
+                            }
+                        }
+                    } else {
+                        item(key = "doneTitle") { SectionTitle(if (section == 0) "Videos" else "Music") }
+                        items(finished, key = { "d-" + it.key }) { task ->
+                            DownloadRow(
+                                task, onOpen = { open(task) }, compact = compact, showThumbnail = showThumbs,
+                                selecting = selecting, selected = task.key in selection,
+                                onToggle = { selection = DownloadsViewLogic.toggle(selection, task.key) },
+                            )
+                        }
                     }
                     item(key = "footer") { Spacer(Modifier.height(20.dp)) }
                 }
@@ -323,7 +474,15 @@ private fun DownloadSectionPill(label: String, count: Int, selected: Boolean, on
 }
 
 @Composable
-private fun DownloadRow(task: DownloadTask, onOpen: (() -> Unit)?) {
+private fun DownloadRow(
+    task: DownloadTask,
+    onOpen: (() -> Unit)?,
+    compact: Boolean = false,
+    showThumbnail: Boolean = true,
+    selecting: Boolean = false,
+    selected: Boolean = false,
+    onToggle: () -> Unit = {},
+) {
     val c = MaterialTheme.colorScheme
     var menu by remember(task.key) { mutableStateOf(false) }
     val running = task.status == DownloadStatus.Downloading || task.status == DownloadStatus.Queued ||
@@ -332,27 +491,39 @@ private fun DownloadRow(task: DownloadTask, onOpen: (() -> Unit)?) {
     Column(
         Modifier
             .fillMaxWidth()
-            .pressable(enabled = onOpen != null, pressedScale = 0.985f) { onOpen?.invoke() }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .pressable(enabled = selecting || onOpen != null, pressedScale = 0.985f) {
+                if (selecting) onToggle() else onOpen?.invoke()
+            }
+            .padding(horizontal = 16.dp, vertical = if (compact) 4.dp else 8.dp),
     ) {
         Row(verticalAlignment = Alignment.Top) {
-            Box {
-                Thumbnail(
-                    task.thumbnail,
-                    Modifier.size(width = 132.dp, height = 74.dp),
-                    radius = 12,
-                    videoId = task.videoId,
+            if (selecting) {
+                Icon(
+                    if (selected) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
+                    if (selected) "Selected" else "Not selected",
+                    tint = if (selected) c.primary else c.onSurfaceVariant,
+                    modifier = Modifier.padding(end = 10.dp, top = if (compact) 6.dp else 24.dp).size(24.dp),
                 )
-                DurationPill(task.durationSec, Modifier.align(Alignment.BottomEnd).padding(5.dp), small = true)
             }
-            Spacer(Modifier.width(12.dp))
+            if (showThumbnail) {
+                Box {
+                    Thumbnail(
+                        task.thumbnail,
+                        if (compact) Modifier.size(width = 96.dp, height = 54.dp) else Modifier.size(width = 132.dp, height = 74.dp),
+                        radius = 12,
+                        videoId = task.videoId,
+                    )
+                    DurationPill(task.durationSec, Modifier.align(Alignment.BottomEnd).padding(5.dp), small = true)
+                }
+                Spacer(Modifier.width(12.dp))
+            }
             Column(Modifier.weight(1f)) {
                 Text(
                     task.title,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     lineHeight = 18.sp,
-                    maxLines = 2,
+                    maxLines = if (compact) 1 else 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(3.dp))
@@ -377,7 +548,7 @@ private fun DownloadRow(task: DownloadTask, onOpen: (() -> Unit)?) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Box {
+            if (!selecting) Box {
                 Box(
                     Modifier
                         .size(34.dp)

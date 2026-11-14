@@ -34,6 +34,9 @@ Files: `WatchPlan.kt`, `WatchLog.kt`, `FocusGuard.kt`, `ChapterAutopilot.kt`, `T
 - Time-fit queue: `TimeFitLogic.select` filters (live, too short, too long, watched, duplicates), ranks by interest words, favourite channels and planned items, then fills the budget greedily. Starting playback waits for the first video to load before queueing the rest.
 - Not verified: none of this has been compiled or run in the authoring environment (no Android SDK); CI is the first build.
 
+## Downloads library (DownloadsLibrary.kt, DownloadsUi.kt)
+`DownloadsScreen` maps each task to a plain `DownloadEntry` and lets `DownloadsViewLogic` filter, sort and group it (unit-tested in `DownloadsLibraryTest`). View choices live in `DownloadsViewPrefs` (prefs `downloads_view`, initialised the first time the screen is shown). Selection is per tab and is dropped when a task disappears. "Retry failed" and "Resume all" call `Downloads.resume`, which restarts the file from zero. Free space comes from `StatFs` on the download folder. Not run on a device.
+
 ## Testing status
 CI (`build.yml`) compiles the release build and runs the unit tests. No feature in this document has been run on a device.
 
