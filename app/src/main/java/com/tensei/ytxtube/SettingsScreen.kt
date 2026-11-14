@@ -1,6 +1,8 @@
 package com.tensei.ytxtube
 import androidx.compose.ui.window.Dialog
 import android.provider.DocumentsContract
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material.icons.rounded.Download
@@ -1656,6 +1658,8 @@ private fun StorageUsageContent(context: Context, onCacheCleared: () -> Unit) {
     val c = MaterialTheme.colorScheme
     var storageData by remember { mutableStateOf(calculateStorageData(context)) }
     var clearedNotice by remember { mutableStateOf<String?>(null) }
+    var showStorageActions by remember { mutableStateOf(false) }
+    var showDeleteDownloadsConfirm by remember { mutableStateOf(false) }
 
     // Continuously monitor and refresh storage in real-time as background tasks or downloads run
     LaunchedEffect(Unit) {
@@ -1761,17 +1765,7 @@ private fun StorageUsageContent(context: Context, onCacheCleared: () -> Unit) {
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color(0xFF2E1517))
-                .pressable {
-                    StreamCache.invalidateAll()
-                    Downloads.deleteAllDownloadsAndWork()
-                    runCatching {
-                        context.cacheDir.deleteRecursively()
-                        context.externalCacheDir?.deleteRecursively()
-                    }
-                    storageData = calculateStorageData(context)
-                    clearedNotice = "Cache & downloads cleared!"
-                    onCacheCleared()
-                }
+                .pressable { showStorageActions = true }
                 .padding(vertical = 9.dp),
             contentAlignment = Alignment.Center,
         ) {
@@ -1784,13 +1778,72 @@ private fun StorageUsageContent(context: Context, onCacheCleared: () -> Unit) {
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = clearedNotice ?: "Clear YTXTube Cache & Downloads",
+                    text = clearedNotice ?: "Manage Cache & Downloads",
                     color = Color(0xFFEF5350),
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 12.5.sp,
                 )
             }
         }
+    }
+
+    if (showStorageActions) {
+        AlertDialog(
+            onDismissRequest = { showStorageActions = false },
+            title = { Text("Manage storage") },
+            text = {
+                Text("Choose what to remove. Clearing the cache keeps downloaded videos and music.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showStorageActions = false
+                        StreamCache.invalidateAll()
+                        runCatching {
+                            context.cacheDir.deleteRecursively()
+                            context.externalCacheDir?.deleteRecursively()
+                        }
+                        storageData = calculateStorageData(context)
+                        clearedNotice = "Cache cleared"
+                        onCacheCleared()
+                    },
+                ) { Text("Clear cache only") }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(
+                        onClick = {
+                            showStorageActions = false
+                            showDeleteDownloadsConfirm = true
+                        },
+                    ) { Text("Delete downloads") }
+                    TextButton(onClick = { showStorageActions = false }) { Text("Cancel") }
+                }
+            },
+        )
+    }
+
+    if (showDeleteDownloadsConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDownloadsConfirm = false },
+            title = { Text("Delete downloaded media?") },
+            text = {
+                Text("This permanently deletes YTXTube-managed downloaded videos, music and temporary download files. Other files in the selected folder will be left untouched.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDownloadsConfirm = false
+                        Downloads.deleteAllDownloadsAndWork()
+                        storageData = calculateStorageData(context)
+                        clearedNotice = "Downloads deleted"
+                    },
+                ) { Text("Delete downloads") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDownloadsConfirm = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 
