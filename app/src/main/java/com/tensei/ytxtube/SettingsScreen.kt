@@ -1660,6 +1660,7 @@ private fun StorageUsageContent(context: Context, onCacheCleared: () -> Unit) {
     var clearedNotice by remember { mutableStateOf<String?>(null) }
     var showStorageActions by remember { mutableStateOf(false) }
     var showDeleteDownloadsConfirm by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     // Continuously monitor and refresh storage in real-time as background tasks or downloads run
     LaunchedEffect(Unit) {
@@ -1834,9 +1835,11 @@ private fun StorageUsageContent(context: Context, onCacheCleared: () -> Unit) {
                 TextButton(
                     onClick = {
                         showDeleteDownloadsConfirm = false
-                        Downloads.deleteAllDownloadsAndWork()
-                        storageData = calculateStorageData(context)
-                        clearedNotice = "Downloads deleted"
+                        scope.launch {
+                            Downloads.deleteAllDownloadsAndWork()
+                            storageData = calculateStorageData(context)
+                            clearedNotice = "Downloads deleted"
+                        }
                     },
                 ) { Text("Delete downloads") }
             },
