@@ -307,9 +307,9 @@ fun SettingsScreen(
                         subtitle = "View source code on GitHub",
                         onClick = { openRepo(ytxRepo) },
                     )
-                    val telegram = "https://t.me/getthefckoutofheree"
+                    val telegram = "https://t.me/Y2kwtf1"
                     val openTelegram: () -> Unit = {
-                        val app = Intent(Intent.ACTION_VIEW, Uri.parse("tg://resolve?domain=getthefckoutofheree"))
+                        val app = Intent(Intent.ACTION_VIEW, Uri.parse("tg://resolve?domain=Y2kwtf1"))
                         val web = Intent(Intent.ACTION_VIEW, Uri.parse(telegram))
                         runCatching { context.startActivity(app) }
                             .onFailure { runCatching { context.startActivity(web) } }
@@ -317,7 +317,7 @@ fun SettingsScreen(
                     SettingsRow(
                         icon = Icons.Rounded.Person,
                         title = "Developer",
-                        subtitle = "@getthefckoutofheree",
+                        subtitle = "@Y2kwtf1",
                         onClick = openTelegram,
                     )
                 }
