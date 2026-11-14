@@ -596,6 +596,73 @@ fun HomeFeedBuilderSettingsContent(context: Context) {
                 }
             }
         }
+
+        // Channel blacklist: hide videos from selected channel names or channel IDs.
+        Text(
+            text = "Blocked Channels",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = c.primary
+        )
+        Text(
+            text = "Add a channel name or channel ID to remove its videos from filtered home feeds.",
+            style = MaterialTheme.typography.bodySmall,
+            color = c.onSurfaceVariant
+        )
+        var newChannel by remember { mutableStateOf("") }
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            BasicTextField(
+                value = newChannel,
+                onValueChange = { newChannel = it },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(c.surfaceContainerLow)
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                textStyle = TextStyle(color = c.onSurface, fontSize = 13.sp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    HomeFeedSettings.addBlockedChannel(newChannel)
+                    newChannel = ""
+                })
+            )
+            Spacer(Modifier.width(8.dp))
+            Button(
+                onClick = {
+                    HomeFeedSettings.addBlockedChannel(newChannel)
+                    newChannel = ""
+                },
+                shape = RoundedCornerShape(10.dp),
+                enabled = newChannel.isNotBlank()
+            ) {
+                Icon(Icons.Rounded.Add, contentDescription = "Block channel")
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            HomeFeedSettings.blockedChannels.forEach { channel ->
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(c.errorContainer)
+                        .clickable { HomeFeedSettings.removeBlockedChannel(channel) }
+                        .padding(horizontal = 8.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        "$channel ✕",
+                        fontSize = 11.sp,
+                        color = c.onErrorContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
     }
 }
 
