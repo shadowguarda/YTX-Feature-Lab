@@ -46,6 +46,9 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -178,7 +181,13 @@ fun SettingsScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
                     .padding(horizontal = 16.dp)
-                    .padding(bottom = contentPadding.calculateBottomPadding() + 24.dp)
+                    // Edge-to-edge: keep the last row clear of the system navigation bar.
+                    .padding(
+                        bottom = maxOf(
+                            contentPadding.calculateBottomPadding(),
+                            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+                        ) + 24.dp,
+                    )
             ) {
                 Spacer(Modifier.height(2.dp))
 
@@ -188,6 +197,8 @@ fun SettingsScreen(
                     onRequestSignOut = { showSignOutConfirm = true },
                     onAccountSwitched = onAccountSwitched,
                 )
+
+                Spacer(Modifier.height(10.dp))
 
                 SettingsCard {
                     SettingsRow(
