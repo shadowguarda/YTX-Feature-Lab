@@ -378,17 +378,11 @@ object Downloads {
         runCatching { dir.listFiles()?.forEach { if (it.isFile && it.name.endsWith(".part")) it.delete() } }
     }
 
-    /** Permanently deletes all downloaded video/music files and clears all tasks. */
+    /** Permanently deletes YTXTube-managed downloads and temporary work files only. */
     fun deleteAllDownloadsAndWork() {
+        // clearAll() removes task-owned media and .part files. Do not sweep the whole
+        // user-selected directory: it may contain unrelated files owned by the user.
         clearAll()
-        runCatching {
-            val d = currentDownloadDir
-            if (d.exists() && d.isDirectory) {
-                d.listFiles()?.forEach { file ->
-                    if (file.isFile) file.delete()
-                }
-            }
-        }
     }
 
     private fun pump() {
