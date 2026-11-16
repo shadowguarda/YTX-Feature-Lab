@@ -1,6 +1,7 @@
 package com.tensei.ytxtube
 
 import android.widget.Toast
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -236,6 +237,8 @@ fun DownloadsScreen(
     var showCustomize by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
+    var showCleanup by remember { mutableStateOf(false) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     val videos = tasks.filter { it.height > 0 }
     val music = tasks.filter { it.height == 0 }
@@ -251,6 +254,10 @@ fun DownloadsScreen(
     val finishedBytes = DownloadsViewLogic.totalBytes(
         entries.filter { e -> byKey[e.key]?.status == DownloadStatus.Complete },
     )
+    val downloadingNow = sectionTasks.filter { it.status == DownloadStatus.Downloading }
+    val totalSpeed = downloadingNow.sumOf { it.speedBps }
+    val remainingBytes = downloadingNow.filter { it.total > 0L }.sumOf { (it.total - it.downloaded).coerceAtLeast(0L) }
+    val overallEta = DownloadProgressLogic.etaSeconds(remainingBytes, 0L, totalSpeed)
     val compact = DownloadsViewPrefs.density == DownloadDensity.Compact
     val showThumbs = DownloadsViewPrefs.showThumbnails
 
@@ -288,6 +295,16 @@ fun DownloadsScreen(
         )
     }
     if (showCustomize) DownloadsCustomizeSheet(onDismiss = { showCustomize = false })
+    if (showCleanup) {
+        val cleanupItems = tasks.filter { it.status == DownloadStatus.Complete }.map { t ->
+            CleanupItem(t.key, t.title, maxOf(t.total, t.downloaded), tasks.indexOf(t), Watched.has(t.videoId))
+        }
+        DownloadsCleanupSheet(
+            items = cleanupItems,
+            onDelete = { keys -> tasks.filter { it.key in keys }.forEach { Downloads.remove(it) } },
+            onDismiss = { showCleanup = false },
+        )
+    }
 
     CollapsingHeaderLayout(
         resetKey = scrollToTop to listOf(tasks.size, tasks.count { it.status == DownloadStatus.Complete }),
@@ -311,6 +328,8 @@ fun DownloadsScreen(
                             bytes = finishedBytes,
                             freeBytes = freeBytes,
                             activeCount = sectionTasks.size - finishedAll.size,
+                            speedBps = totalSpeed,
+                            etaSeconds = overallEta,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                         )
                     }
@@ -360,6 +379,29 @@ fun DownloadsScreen(
                                 sectionTasks.filter { it.status == DownloadStatus.Failed }.forEach { Downloads.resume(it) }
                             },
                             onClearFinished = { confirmClear = true },
+                            onFreeUp = { showCleanup = true },
+                            playLabel = if (section == 0 && finishedAll.isNotEmpty()) {
+                                if (LabsBridge.player?.current == null) "Play all" else "Queue all"
+                            } else null,
+                            onPlayAll = if (section == 0 && finishedAll.isNotEmpty()) {
+                                {
+                                    val p = LabsBridge.player
+                                    val list = shown.filter { it.status == DownloadStatus.Complete }.map { it.toVideoItem() }
+                                    if (p == null) Toast.makeText(context, "The player is not ready yet", Toast.LENGTH_SHORT).show()
+                                    else scope.launch { playOrQueue(p, list) }
+                                }
+                            } else null,
+                            onShuffle = if (section == 0 && finishedAll.size > 1) {
+                                {
+                                    val p = LabsBridge.player
+                                    val list = DownloadPlayLogic.shuffled(
+                                        shown.filter { it.status == DownloadStatus.Complete }.map { it.toVideoItem() },
+                                        System.nanoTime(),
+                                    )
+                                    if (p == null) Toast.makeText(context, "The player is not ready yet", Toast.LENGTH_SHORT).show()
+                                    else scope.launch { playOrQueue(p, list) }
+                                }
+                            } else null,
                         )
                     }
                     Spacer(Modifier.height(4.dp))

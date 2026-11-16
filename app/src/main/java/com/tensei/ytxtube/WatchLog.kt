@@ -166,6 +166,27 @@ object WatchInsightsLogic {
         }
     }
 
+    /** A spreadsheet cell: quoted when needed, and a leading = + - @ is defused so it is not read as a formula. */
+    fun csvCell(text: String): String {
+        val safe = if (text.isNotEmpty() && text[0] in "=+-@") "'$text" else text
+        return if (safe.any { it == ',' || it == '"' || it == '\n' || it == '\r' }) "\"" + safe.replace("\"", "\"\"") + "\"" else safe
+    }
+
+    /** Watch log as CSV (newest [maxRows] sessions, oldest first): date, time, title, channel, seconds, link. */
+    fun toCsv(list: List<WatchSession>, tz: TimeZone, maxRows: Int = MAX_SESSIONS): String {
+        val sb = StringBuilder("date,time,title,channel,seconds,video_url\n")
+        val cal = Calendar.getInstance(tz)
+        list.sortedBy { it.startMs }.takeLast(maxRows).forEach { s ->
+            cal.timeInMillis = s.startMs
+            val date = String.format(Locale.ROOT, "%04d-%02d-%02d", cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
+            val time = String.format(Locale.ROOT, "%02d:%02d", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
+            sb.append(date).append(',').append(time).append(',')
+                .append(csvCell(s.title)).append(',').append(csvCell(s.channel)).append(',')
+                .append(s.seconds).append(',').append("https://www.youtube.com/watch?v=").append(s.videoId).append('\n')
+        }
+        return sb.toString()
+    }
+
     /** 45 -> "<1 min", 780 -> "13 min", 3900 -> "1 h 05 min". */
     fun formatDuration(seconds: Int): String {
         if (seconds < 60) return "<1 min"
@@ -296,6 +317,7 @@ fun WatchInsightsSheet(
     val c = MaterialTheme.colorScheme
     val sessions by WatchLog.sessions.collectAsState()
     val excluded by WatchLog.excludedChannels.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
     var query by remember { mutableStateOf("") }
     var confirmClear by remember { mutableStateOf(false) }
     val tz = remember { TimeZone.getDefault() }
@@ -456,7 +478,23 @@ fun WatchInsightsSheet(
                     YtxChip(label = "Cancel", selected = false) { confirmClear = false }
                 }
             } else {
-                YtxChip(label = "Clear watch log", selected = false) { confirmClear = true }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    YtxChip(label = "Export as CSV", selected = false) {
+                        val csv = WatchInsightsLogic.toCsv(sessions, tz)
+                        val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(android.content.Intent.EXTRA_SUBJECT, "YTXTube watch history")
+                            putExtra(android.content.Intent.EXTRA_TEXT, csv)
+                        }
+                        runCatching {
+                            context.startActivity(
+                                android.content.Intent.createChooser(send, "Export watch history")
+                                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        }
+                    }
+                    YtxChip(label = "Clear watch log", selected = false) { confirmClear = true }
+                }
             }
         }
     }

@@ -187,7 +187,15 @@ object DownloadsViewPrefs {
 }
 
 @Composable
-internal fun DownloadsSummaryCard(count: Int, bytes: Long, freeBytes: Long, activeCount: Int, modifier: Modifier = Modifier) {
+internal fun DownloadsSummaryCard(
+    count: Int,
+    bytes: Long,
+    freeBytes: Long,
+    activeCount: Int,
+    modifier: Modifier = Modifier,
+    speedBps: Long = 0L,
+    etaSeconds: Long = -1L,
+) {
     val c = MaterialTheme.colorScheme
     YtxPanel(modifier) {
         Text(DownloadsViewLogic.summary(count, bytes), fontWeight = FontWeight.Bold, fontSize = 15.sp)
@@ -205,7 +213,12 @@ internal fun DownloadsSummaryCard(count: Int, bytes: Long, freeBytes: Long, acti
         }
         if (activeCount > 0) {
             Spacer(Modifier.height(4.dp))
-            Text("$activeCount in progress", fontSize = 12.sp, color = c.onSurfaceVariant)
+            val extra = listOf(DownloadProgressLogic.formatSpeed(speedBps), DownloadProgressLogic.formatEta(etaSeconds)).filter { it.isNotEmpty() }
+            Text(
+                (listOf("$activeCount in progress") + extra).joinToString(" · "),
+                fontSize = 12.sp,
+                color = c.onSurfaceVariant,
+            )
         }
     }
 }
@@ -261,15 +274,22 @@ internal fun DownloadsBulkBar(
     onRetryFailed: () -> Unit,
     onClearFinished: () -> Unit,
     modifier: Modifier = Modifier,
+    playLabel: String? = null,
+    onPlayAll: (() -> Unit)? = null,
+    onShuffle: (() -> Unit)? = null,
+    onFreeUp: (() -> Unit)? = null,
 ) {
     if (activeCount + pausedCount + failedCount + finishedCount == 0) return
     Row(
         modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        if (onPlayAll != null && playLabel != null) YtxChip(label = playLabel, selected = true) { onPlayAll() }
+        if (onShuffle != null) YtxChip(label = "Shuffle", selected = false) { onShuffle() }
         if (activeCount > 0) YtxChip(label = "Pause all", selected = false) { onPauseAll() }
         if (pausedCount > 0) YtxChip(label = "Resume all", selected = false) { onResumeAll() }
         if (failedCount > 0) YtxChip(label = "Retry failed ($failedCount)", selected = false) { onRetryFailed() }
+        if (onFreeUp != null && finishedCount > 0) YtxChip(label = "Free up space", selected = false) { onFreeUp() }
         if (finishedCount > 0) YtxChip(label = "Clear finished", selected = false) { onClearFinished() }
     }
 }

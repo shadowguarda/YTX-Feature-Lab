@@ -99,7 +99,7 @@ object TimeFitLogic {
  * Starts the first video and queues the rest. The first video has to be loaded into the player before
  * more can be added (otherwise adding would replace it), so this waits for that.
  */
-private suspend fun playOrQueue(player: PlayerState, picks: List<VideoItem>) {
+internal suspend fun playOrQueue(player: PlayerState, picks: List<VideoItem>) {
     val first = picks.firstOrNull() ?: return
     if (player.current == null) {
         player.open(first)
