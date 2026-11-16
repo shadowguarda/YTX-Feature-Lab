@@ -86,26 +86,6 @@ import kotlinx.coroutines.launch
 
 
 
-@Composable
-private fun AnonHomeBanner(onSignIn: () -> Unit, onSearch: () -> Unit) {
-    val c = MaterialTheme.colorScheme
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(c.surfaceContainerLow)
-            .clickable(onClick = onSignIn)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Icon(Icons.Rounded.AccountCircle, contentDescription = null, tint = c.onSurfaceVariant, modifier = Modifier.size(32.dp))
-        Column(Modifier.weight(1f)) {
-            Text("Sign in for recommendations", fontWeight = FontWeight.Medium, fontSize = 14.sp)
-            Text("Showing popular videos · Tap to personalise", color = c.onSurfaceVariant, fontSize = 12.sp)
-        }
-    }
-}
-
 enum class HomeFilter(val label: String) {
     All("All"),
     Today("Today"),
@@ -166,7 +146,6 @@ fun HomeScreen(
     contentPadding: PaddingValues,
     onOpen: (VideoItem) -> Unit,
     onSearch: () -> Unit,
-    onSignIn: () -> Unit,
     onAccount: () -> Unit,
     scrollToTop: Int = 0,
 ) {
@@ -235,11 +214,6 @@ fun HomeScreen(
                 videos = filteredVideos,
                 filterScrollKey = activeFilter,
                 header = {
-                    if (!signedIn) {
-                        item(key = "anon_banner") {
-                            AnonHomeBanner(onSignIn = onSignIn, onSearch = onSearch)
-                        }
-                    }
                     if (activeFilter == HomeFilter.All) homeShelfItems(lib, onOpen)
                 },
             )
