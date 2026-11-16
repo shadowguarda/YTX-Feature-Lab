@@ -115,6 +115,10 @@ data class PlayerLayoutState(
 
 object PlayerLayoutLogic {
 
+    /** A control is shown unless the viewer switched it off; one a preset does not list stays shown. */
+    fun isVisible(slots: List<PlayerControlSlot>, action: PlayerControlAction): Boolean =
+        slots.firstOrNull { it.action == action }?.visible ?: true
+
     fun defaultSlots(preset: ControlLayoutPreset): List<PlayerControlSlot> = when (preset) {
         ControlLayoutPreset.Minimal -> listOf(
             PlayerControlSlot(PlayerControlAction.LOCK, PlayerControlZone.TOP_BAR, true, 0),
@@ -466,4 +470,11 @@ fun PlayerLayoutCustomizerSheet(
             }
         }
     }
+}
+
+/** Whether the live player should draw [action]'s button, following the Player layout settings. */
+@Composable
+fun rememberControlVisible(action: PlayerControlAction): Boolean {
+    val layoutState by PlayerLayoutManager.state.collectAsState()
+    return PlayerLayoutLogic.isVisible(layoutState.slots, action)
 }

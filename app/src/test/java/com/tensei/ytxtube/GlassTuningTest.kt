@@ -30,3 +30,15 @@ class GlassTuningTest {
         assertEquals(0.16f, GlassTuning.borderAlpha(GlassTuning.DEFAULT_BORDER_ALPHA), 0.0001f)
     }
 }
+
+class PlayerLayoutVisibilityTest {
+    @Test
+    fun hiddenOnlyWhenSwitchedOff_andMissingSlotsStayVisible() {
+        val standard = PlayerLayoutLogic.defaultSlots(ControlLayoutPreset.Standard)
+        assertEquals(true, PlayerLayoutLogic.isVisible(standard, PlayerControlAction.SETTINGS))
+        val hidden = standard.map { if (it.action == PlayerControlAction.PIP) it.copy(visible = false) else it }
+        assertEquals(false, PlayerLayoutLogic.isVisible(hidden, PlayerControlAction.PIP))
+        // Compact does not list picture-in-picture at all: that must not hide the button.
+        assertEquals(true, PlayerLayoutLogic.isVisible(PlayerLayoutLogic.defaultSlots(ControlLayoutPreset.Compact), PlayerControlAction.PIP))
+    }
+}

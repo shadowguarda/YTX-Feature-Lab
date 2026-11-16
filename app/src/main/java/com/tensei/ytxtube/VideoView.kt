@@ -640,22 +640,24 @@ fun VideoContent(
                     }
 
 
-                    GlassButton(
-                        if (state.zoomToFill) Icons.Rounded.AspectRatio else Icons.Rounded.CropFree,
-                        if (state.zoomToFill) "Fit to screen" else "Fill screen",
-                        enabled,
-                        size = 32.dp,
-                        iconSize = 18.dp,
-                        tinted = state.zoomToFill,
-                        backdrop = videoBackdrop,
-                    ) {
-                        touched()
-                        state.toggleZoomToFill()
+                    if (rememberControlVisible(PlayerControlAction.ASPECT_RATIO)) {
+                        GlassButton(
+                            if (state.zoomToFill) Icons.Rounded.AspectRatio else Icons.Rounded.CropFree,
+                            if (state.zoomToFill) "Fit to screen" else "Fill screen",
+                            enabled,
+                            size = 32.dp,
+                            iconSize = 18.dp,
+                            tinted = state.zoomToFill,
+                            backdrop = videoBackdrop,
+                        ) {
+                            touched()
+                            state.toggleZoomToFill()
+                        }
+                        Spacer(Modifier.width(6.dp))
                     }
-                    Spacer(Modifier.width(6.dp))
 
 
-                    if (pip?.supported == true) {
+                    if (pip?.supported == true && rememberControlVisible(PlayerControlAction.PIP)) {
                         GlassButton(Icons.Rounded.PictureInPictureAlt, "Picture-in-picture", enabled, size = 32.dp, iconSize = 18.dp, backdrop = videoBackdrop) {
                             controlsVisible = false
                             if (!pip.enter(state.videoAspect)) state.actionMessage = "Picture-in-picture is turned off for YTXTube in Settings."
@@ -664,9 +666,11 @@ fun VideoContent(
                     }
 
 
-                    GlassButton(Icons.Rounded.Settings, "Playback settings", enabled, size = 32.dp, iconSize = 20.dp, backdrop = videoBackdrop) {
-                        touched()
-                        state.sheet = PlayerSheet.Settings
+                    if (rememberControlVisible(PlayerControlAction.SETTINGS)) {
+                        GlassButton(Icons.Rounded.Settings, "Playback settings", enabled, size = 32.dp, iconSize = 20.dp, backdrop = videoBackdrop) {
+                            touched()
+                            state.sheet = PlayerSheet.Settings
+                        }
                     }
                 }
                 Row(
@@ -729,15 +733,17 @@ fun VideoContent(
                             SkipSegmentPill(segment, enabled = true) { touched(); state.skipSegment(segment) }
                             Spacer(Modifier.width(6.dp))
                         }
-                        GlassButton(
-                            if (fullscreen) Icons.Rounded.FullscreenExit else Icons.Rounded.Fullscreen,
-                            if (fullscreen) "Exit fullscreen" else "Fullscreen",
-                            enabled,
-                            size = 34.dp,
-                            iconSize = 22.dp,
-                            tinted = false,
-                            backdrop = videoBackdrop,
-                        ) { onToggleFullscreen() }
+                        if (rememberControlVisible(PlayerControlAction.FULLSCREEN) || fullscreen) {
+                            GlassButton(
+                                if (fullscreen) Icons.Rounded.FullscreenExit else Icons.Rounded.Fullscreen,
+                                if (fullscreen) "Exit fullscreen" else "Fullscreen",
+                                enabled,
+                                size = 34.dp,
+                                iconSize = 22.dp,
+                                tinted = false,
+                                backdrop = videoBackdrop,
+                            ) { onToggleFullscreen() }
+                        }
                     }
                 }
             }
