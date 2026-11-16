@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.AccountCircle
@@ -202,6 +203,7 @@ fun SignInScreen(onDone: () -> Unit, onCancel: () -> Unit) {
 fun HeaderActions(onSearch: () -> Unit, onAccount: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         CircleAction(Icons.Rounded.Search, "Search", onSearch)
+        CircleAction(Icons.Rounded.Tune, "Quick settings") { UiUpgrades.quickPanelOpen = true }
         AccountAction(onAccount)
     }
 }

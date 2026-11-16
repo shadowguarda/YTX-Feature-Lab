@@ -832,6 +832,18 @@ private fun AppearanceThemeContent(context: Context) {
             subtitle = "Choose which buttons the video player shows",
             onClick = { showPlayerLayout = true },
         )
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "Layout, dock and home shelves",
+            subtitle = "Dock tabs and labels, home rows, floating pill and wallpaper switches",
+            onClick = { UiUpgrades.layoutSheetOpen = true },
+        )
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "Quick settings",
+            subtitle = "The control panel from the slider icon at the top of every screen",
+            onClick = { UiUpgrades.quickPanelOpen = true },
+        )
         if (showGlassStudio) LiquidGlassDesignStudioSheet(onDismiss = { showGlassStudio = false })
         if (showAccentSheet) SettingsSheetHost(onDismiss = { showAccentSheet = false }) { ScopedThemeSheet(onDismiss = { showAccentSheet = false }) }
         if (showPlayerLayout) SettingsSheetHost(onDismiss = { showPlayerLayout = false }) { PlayerLayoutCustomizerSheet(onDismiss = { showPlayerLayout = false }) }

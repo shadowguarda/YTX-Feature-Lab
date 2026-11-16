@@ -551,6 +551,7 @@ fun YtxTubeApp() {
                     cameraDistance = 16f
                 }
         ) {
+        AmbientWallpaper(player.current?.thumbnail, animated = !reduced)
         AnimatedContent(
             targetState = tab,
             modifier = Modifier
@@ -739,6 +740,7 @@ fun YtxTubeApp() {
 
                         alpha = (if (showPlayer) 0f else 1f) * (1f - (dismiss.value / (dismissDistance * 1.6f)).coerceIn(0f, 1f))
                     }
+                    .miniPlayerSwipe(player, UiUpgrades.miniSwipe && !showPlayer)
                     .draggable(
                         state = rememberDraggableState { delta ->
                             if (morph.progress.value <= 0f && (delta > 0f || dismiss.value > 0f)) {
@@ -796,13 +798,15 @@ fun YtxTubeApp() {
                 .widthIn(max = NavWidth)
                 .fillMaxWidth(),
         ) {
+            val dockTabs = UiUpgrades.dockTabs()
             LiquidBottomBar(
-                selectedTabIndex = { Tab.entries.indexOf(tab) },
-                onTabSelected = { index -> Tab.entries.getOrNull(index)?.let(selectTab) },
+                selectedTabIndex = { dockTabs.indexOf(tab).coerceAtLeast(0) },
+                onTabSelected = { index -> dockTabs.getOrNull(index)?.let(selectTab) },
                 backdrop = pageBackdrop,
                 modifier = Modifier.fillMaxWidth(),
+                tabsCount = dockTabs.size,
             ) {
-                Tab.entries.forEach { t ->
+                dockTabs.forEach { t ->
                     LiquidNavTab(t, t == tab) { selectTab(t) }
                 }
             }
@@ -985,6 +989,15 @@ fun YtxTubeApp() {
                 sharedSurface(Modifier.fillMaxSize().aspectFit(player.videoAspect))
             }
         }
+
+        DynamicIsland(
+            player = player,
+            visible = !showPlayer && !showFullscreen && !openSettings && shortsEntry == null && !pip.active && tab != Tab.Shorts,
+            onExpand = { player.expanded = true },
+            modifier = Modifier.align(Alignment.TopCenter),
+        )
+        QuickSettingsPanel(onOpenSettings = { openSettings = true })
+        if (UiUpgrades.layoutSheetOpen) LayoutCustomizeSheet(onDismiss = { UiUpgrades.layoutSheetOpen = false })
 
         UpdateOverlay(updateState, pageBackdrop)
         }

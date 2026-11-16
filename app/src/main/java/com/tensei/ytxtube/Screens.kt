@@ -240,6 +240,7 @@ fun HomeScreen(
                             AnonHomeBanner(onSignIn = onSignIn, onSearch = onSearch)
                         }
                     }
+                    if (activeFilter == HomeFilter.All) homeShelfItems(lib, onOpen)
                 },
             )
         }

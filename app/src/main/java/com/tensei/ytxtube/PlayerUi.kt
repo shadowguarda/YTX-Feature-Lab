@@ -206,17 +206,7 @@ fun PlayerScreen(
     var dominantColor by remember(item.id) { mutableStateOf(c.primaryContainer) }
     LaunchedEffect(item.thumbnail) {
         val thumb = item.thumbnail ?: return@LaunchedEffect
-        withContext(Dispatchers.IO) {
-            runCatching {
-                val req = ImageRequest.Builder(context).data(thumb).size(32).allowHardware(false).build()
-                val bm = (context.imageLoader.execute(req) as? SuccessResult)?.drawable?.toBitmap(1, 1)
-                bm?.getPixel(0, 0)?.let { pixel ->
-                    withContext(Dispatchers.Main) {
-                        dominantColor = Color(pixel)
-                    }
-                }
-            }
-        }
+        loadArtworkColor(context, thumb, vivid = UiUpgrades.dynamicArtwork)?.let { dominantColor = it }
     }
     val ambientColor by animateColorAsState(dominantColor, tween(600), label = "ambient")
     val ambientDrift = if (GlassQuality.effectsSupported) {

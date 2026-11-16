@@ -51,6 +51,7 @@ class YTXTubeApplication : Application(), ImageLoaderFactory {
         MusicFoldersManager.init(this)
         SubscriptionFoldersManager.init(this)
         HomeDashboardManager.init(this)
+        UiUpgrades.init(this)
         WatchPlanManager.init(this)
         WatchLog.init(this)
         FocusGuard.init(this)
