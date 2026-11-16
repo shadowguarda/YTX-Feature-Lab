@@ -569,7 +569,7 @@ fun YtxTubeApp() {
             when (t) {
                 Tab.Home -> HomeScreen(
                     lib, contentPadding, onOpen = player::open, onSearch = { openSearch = true },
-                    onSignIn = { signingIn = true }, onAccount = { openSettings = true },
+                    onAccount = { openSettings = true },
                     scrollToTop = scrollToTop[Tab.Home] ?: 0,
                 )
                 Tab.Music -> MusicScreen(

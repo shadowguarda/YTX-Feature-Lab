@@ -1,97 +1,135 @@
-name: Release
+name: Signed Android Release
 
 on:
   push:
-    tags: ["v*"]
-    # Every merge or push to main publishes a full (non pre-release) "latest" release.
-    branches: [main]
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       tag:
-        description: "Version tag to create or update (e.g. v0.1.0). Built from the selected branch."
-        required: true
+        description: "Optional release tag (example: v2.9.4). Leave blank to use app version."
+        required: false
+        type: string
 
 permissions:
   contents: write
 
+concurrency:
+  group: signed-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
+    name: Build and publish signed APK
     runs-on: ubuntu-latest
     env:
-      TAG: ${{ github.event.inputs.tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || format('v2.2.1-lab.{0}', github.run_number) }}
+      RELEASE_TAG: ${{ github.event.inputs.tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: "21"
+          cache: gradle
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Run unit tests
         run: ./gradlew :app:testDebugUnitTest --stacktrace
 
-      - name: Prepare signing key
+      - name: Prepare release signing key
+        shell: bash
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          SECRET_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          SECRET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          SECRET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        shell: bash
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          for secret_name in KEYSTORE_BASE64 SECRET_STORE_PASSWORD SECRET_KEY_ALIAS SECRET_KEY_PASSWORD; do
-            if [ -z "${!secret_name}" ]; then
-              echo "::error::Missing required GitHub secret for release signing: ${secret_name}"
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Missing repository secret: $name"
+              echo "Add all four signing secrets in Settings > Secrets and variables > Actions."
               exit 1
             fi
           done
 
-          KS="$RUNNER_TEMP/release.jks"
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KS"
-          test -s "$KS"
-          chmod 600 "$KS"
-          keytool -list -keystore "$KS" -storepass "$SECRET_STORE_PASSWORD" \
-            -alias "$SECRET_KEY_ALIAS" >/dev/null
+          KEYSTORE="$RUNNER_TEMP/ytx-release.jks"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          chmod 600 "$KEYSTORE"
+          keytool -list -keystore "$KEYSTORE" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
 
-          echo "::add-mask::$SECRET_STORE_PASSWORD"
-          echo "::add-mask::$SECRET_KEY_PASSWORD"
-          {
-            echo "KEYSTORE_PATH=$KS"
-            echo "KEYSTORE_PASSWORD=$SECRET_STORE_PASSWORD"
-            echo "KEY_ALIAS=$SECRET_KEY_ALIAS"
-            echo "KEY_PASSWORD=$SECRET_KEY_PASSWORD"
-          } >> "$GITHUB_ENV"
+          echo "KEYSTORE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
+          echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
 
-      - name: Build signed release APK
+      - name: Build release APK
         run: ./gradlew :app:assembleRelease --stacktrace
 
-      - name: Verify signature and name artifact
+      - name: Verify signature and prepare release files
+        id: package
+        shell: bash
         run: |
-          APK_SRC="$(ls app/build/outputs/apk/release/*.apk | head -1)"
-          APK="YTXTube-${TAG}.apk"
-          cp "$APK_SRC" "$APK"
-          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
-          "$BT/apksigner" verify --print-certs "$APK"
+          set -euo pipefail
+          APK_SOURCE="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          test -n "$APK_SOURCE"
+          VERSION_NAME="$(sed -nE 's/^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          test -n "$VERSION_NAME"
+          TAG="$RELEASE_TAG"
+          if [[ -z "$TAG" ]]; then TAG="v$VERSION_NAME"; fi
+          APK="YTXTube-$TAG.apk"
+          cp "$APK_SOURCE" "$APK"
+
+          BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
           sha256sum "$APK" | tee "$APK.sha256"
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "apk=$APK" >> "$GITHUB_OUTPUT"
+
+      - name: Upload signed APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YTXTube-signed-${{ steps.package.outputs.tag }}
+          path: |
+            ${{ steps.package.outputs.apk }}
+            ${{ steps.package.outputs.apk }}.sha256
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.package.outputs.tag }}
+          APK: ${{ steps.package.outputs.apk }}
+        shell: bash
         run: |
-          APK="YTXTube-${TAG}.apk"
-          NOTES="Signed release build of YTXTube ${TAG}.\n\nSHA-256:\n\`$(cat "$APK.sha256")\`"
-          # Builds from main or a version tag are full releases marked Latest.
-          # Anything else (a manual run on another branch) is a pre-release.
-          case "$GITHUB_REF" in
-            refs/heads/main|refs/tags/*) FLAGS="--latest" ;;
-            *) FLAGS="--prerelease" ;;
-          esac
+          set -euo pipefail
+          NOTES="Signed YTXTube Android APK.
+
+          Built from commit $GITHUB_SHA.
+
+          SHA-256:
+          $(cat "$APK.sha256")"
+
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            FLAGS=(--latest)
+          else
+            FLAGS=(--prerelease)
+          fi
+
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" "$APK.sha256" --clobber
-            gh release edit "$TAG" $FLAGS
+            gh release edit "$TAG" "${FLAGS[@]}"
           else
-            gh release create "$TAG" "$APK" "$APK.sha256" $FLAGS \
-              --title "YTXTube ${TAG}" --notes "$(printf "$NOTES")" --target "$GITHUB_SHA"
+            gh release create "$TAG" "$APK" "$APK.sha256" "${FLAGS[@]}" \
+              --title "YTXTube $TAG" \
+              --notes "$NOTES" \
+              --target "$GITHUB_SHA"
           fi
