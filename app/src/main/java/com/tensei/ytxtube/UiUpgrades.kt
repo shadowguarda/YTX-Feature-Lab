@@ -163,6 +163,12 @@ object UiUpgrades {
 
     var islandEnabled by mutableStateOf(true)
         private set
+    var islandPauseDurationMs by mutableStateOf(4_000)
+        private set
+    var islandShowProgress by mutableStateOf(true)
+        private set
+    var islandShowControls by mutableStateOf(true)
+        private set
     var wallpaperEnabled by mutableStateOf(false)
         private set
     var wallpaperAnimated by mutableStateOf(true)
@@ -188,6 +194,9 @@ object UiUpgrades {
         val p = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         prefs = p
         islandEnabled = p.getBoolean("island", true)
+        islandPauseDurationMs = p.getInt("island_pause_ms", 4_000).coerceIn(1_000, 15_000)
+        islandShowProgress = p.getBoolean("island_progress", true)
+        islandShowControls = p.getBoolean("island_controls", true)
         wallpaperEnabled = p.getBoolean("wallpaper", false)
         wallpaperAnimated = p.getBoolean("wallpaper_anim", true)
         dynamicArtwork = p.getBoolean("dynamic_artwork", true)
@@ -207,6 +216,18 @@ object UiUpgrades {
     private fun putBool(key: String, value: Boolean) { prefs?.edit()?.putBoolean(key, value)?.apply() }
 
     fun updateIslandEnabled(value: Boolean) { islandEnabled = value; putBool("island", value) }
+    fun updateIslandPauseDuration(valueMs: Int) {
+        islandPauseDurationMs = valueMs.coerceIn(1_000, 15_000)
+        prefs?.edit()?.putInt("island_pause_ms", islandPauseDurationMs)?.apply()
+    }
+    fun updateIslandShowProgress(value: Boolean) {
+        islandShowProgress = value
+        putBool("island_progress", value)
+    }
+    fun updateIslandShowControls(value: Boolean) {
+        islandShowControls = value
+        putBool("island_controls", value)
+    }
     fun updateWallpaperEnabled(value: Boolean) { wallpaperEnabled = value; putBool("wallpaper", value) }
     fun updateWallpaperAnimated(value: Boolean) { wallpaperAnimated = value; putBool("wallpaper_anim", value) }
     fun updateDynamicArtwork(value: Boolean) { dynamicArtwork = value; putBool("dynamic_artwork", value) }
