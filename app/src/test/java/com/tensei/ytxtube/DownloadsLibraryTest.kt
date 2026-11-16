@@ -58,3 +58,29 @@ class DownloadsLibraryTest {
         assertEquals(DownloadDensity.Comfortable, DownloadsViewLogic.parseDensity(null))
     }
 }
+
+class DownloadProgressLogicTest {
+    @Test
+    fun speedIsSmoothedAndNeverNegative() {
+        assertEquals(1_000_000L, DownloadProgressLogic.instantSpeed(120_000, 120))
+        assertEquals(0L, DownloadProgressLogic.instantSpeed(-5, 120))
+        assertEquals(0L, DownloadProgressLogic.instantSpeed(100, 0))
+        assertEquals(500L, DownloadProgressLogic.smooth(0, 500))
+        assertEquals(650L, DownloadProgressLogic.smooth(500, 1000))
+    }
+
+    @Test
+    fun etaAndFormatting() {
+        assertEquals(10L, DownloadProgressLogic.etaSeconds(1_000, 0, 100))
+        assertEquals(1L, DownloadProgressLogic.etaSeconds(1_001, 1_000, 100))
+        assertEquals(-1L, DownloadProgressLogic.etaSeconds(-1, 0, 100))
+        assertEquals(-1L, DownloadProgressLogic.etaSeconds(1_000, 0, 0))
+        assertEquals("", DownloadProgressLogic.formatEta(-1))
+        assertEquals("1 s left", DownloadProgressLogic.formatEta(0))
+        assertEquals("45 s left", DownloadProgressLogic.formatEta(45))
+        assertEquals("3 min left", DownloadProgressLogic.formatEta(121))
+        assertEquals("1 h 05 min left", DownloadProgressLogic.formatEta(3900))
+        assertEquals("", DownloadProgressLogic.formatSpeed(0))
+        assertEquals("1.0 MB/s", DownloadProgressLogic.formatSpeed(1024 * 1024))
+    }
+}

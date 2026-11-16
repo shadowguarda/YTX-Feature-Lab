@@ -76,6 +76,9 @@ class DownloadTask(
         internal set
     var error by mutableStateOf<String?>(null)
         internal set
+    /** Smoothed download speed in bytes per second; 0 when unknown or not downloading. */
+    var speedBps by mutableStateOf(0L)
+        internal set
 
     val progress: Float
         get() = when {
@@ -434,6 +437,7 @@ object Downloads {
             task.status = DownloadStatus.Failed
             deleteWork(task)
         } finally {
+            task.speedBps = 0L
             jobs.remove(task.key)
             persist()
             pump()
@@ -442,6 +446,8 @@ object Downloads {
 
     private suspend fun runDownload(task: DownloadTask) {
         task.status = DownloadStatus.Downloading
+        lastReport.remove(task.key)
+        task.speedBps = 0L
         StreamCache.invalidate(task.videoId)
         val info = StreamCache.getOrLoad(task.videoId)
         HdrFormats.install(task.videoId, info)
@@ -452,7 +458,8 @@ object Downloads {
             work.delete()
             val remote = probe(audio.content)
             task.total = remote.total
-            val received = transfer(audio.content, work, remote) { done -> report(task, done) }
+            val got = AtomicLong(0)
+            val received = transfer(audio.content, work, remote) { n -> report(task, got.addAndGet(n)) }
             if (received != remote.total || work.length() != remote.total) {
                 throw IOException("Audio download incomplete (${work.length()} of ${remote.total} bytes)")
             }
@@ -478,7 +485,8 @@ object Downloads {
             work.delete()
             val remote = probe(muxed.content)
             task.total = remote.total
-            val received = transfer(muxed.content, work, remote) { done -> report(task, done) }
+            val got = AtomicLong(0)
+            val received = transfer(muxed.content, work, remote) { n -> report(task, got.addAndGet(n)) }
             if (received != remote.total || work.length() != remote.total) {
                 throw IOException("Download incomplete (${work.length()} of ${remote.total} bytes)")
             }
@@ -547,7 +555,12 @@ object Downloads {
         val last = lastReport[task.key] ?: 0L
         if (now - last >= 120L) {
             lastReport[task.key] = now
-            task.downloaded = done.coerceAtMost(if (task.total > 0) task.total else done)
+            val shown = done.coerceAtLeast(0L).coerceAtMost(if (task.total > 0) task.total else done.coerceAtLeast(0L))
+            if (last > 0L) {
+                val instant = DownloadProgressLogic.instantSpeed(shown - task.downloaded, now - last)
+                task.speedBps = DownloadProgressLogic.smooth(task.speedBps, instant)
+            }
+            task.downloaded = shown
             val lastSaved = lastPersist[task.key] ?: 0L
             if (now - lastSaved >= 2_000L) {
                 lastPersist[task.key] = now
@@ -628,9 +641,12 @@ object Downloads {
     ): Long {
         var last: Throwable? = null
         repeat(3) { attempt ->
+            var counted = 0L
             try {
-                return downloadRangeOnce(url, file, start, end, onProgress)
+                return downloadRangeOnce(url, file, start, end) { n -> counted += n; onProgress(n) }
             } catch (t: Throwable) {
+                // Take back what this failed attempt reported, since the retry fetches it again.
+                if (counted > 0L) onProgress(-counted)
                 if (t is CancellationException) throw t
                 last = t
                 Thread.sleep(350L * (attempt + 1))

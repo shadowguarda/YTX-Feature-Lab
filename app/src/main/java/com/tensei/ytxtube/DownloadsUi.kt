@@ -631,11 +631,14 @@ private fun statusText(task: DownloadTask): String = when (task.status) {
 
 private fun progressText(task: DownloadTask): String {
     val total = task.total
-    return if (total > 0) {
+    val base = if (total > 0) {
         "${formatBytes(task.downloaded)} of ${formatBytes(total)}"
     } else {
         formatBytes(task.downloaded)
     }
+    if (task.status != DownloadStatus.Downloading || task.speedBps <= 0L) return base
+    val eta = DownloadProgressLogic.formatEta(DownloadProgressLogic.etaSeconds(total, task.downloaded, task.speedBps))
+    return listOf(base, DownloadProgressLogic.formatSpeed(task.speedBps), eta).filter { it.isNotEmpty() }.joinToString(" · ")
 }
 
 private fun qualityTag(height: Int): String? = when {

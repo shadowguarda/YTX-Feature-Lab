@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -520,6 +521,39 @@ fun schemeFor(context: Context, seedHex: String?, dark: Boolean): ColorScheme =
         completeLedgiiScheme(seedValue, seedScheme(seedValue, dark))
     }
 
+/** Recolours the primary colours with a viewer-chosen accent; the rest of the scheme is untouched. */
+fun ColorScheme.withAccent(accentHex: String, dark: Boolean): ColorScheme {
+    val onLight = ThemeAccentLogic.onAccentIsLight(accentHex) ?: return this
+    val accent = Color(android.graphics.Color.parseColor(accentHex))
+    val base = if (dark) "#1E1E1E" else "#F2F2F2"
+    val container = Color(android.graphics.Color.parseColor(ThemeAccentLogic.blendHex(base, accentHex, if (dark) 0.35f else 0.25f)))
+    return copy(
+        primary = accent,
+        onPrimary = if (onLight) Color.White else Color.Black,
+        primaryContainer = container,
+        onPrimaryContainer = if (dark) Color.White else Color(0xFF1B1B1F),
+        surfaceTint = accent,
+        inversePrimary = accent,
+    )
+}
+
+/** Gives the player its own accent when "Use these accent colours" and "Separate player theme" are both on. */
+@Composable
+fun ScopedPlayerTheme(content: @Composable () -> Unit) {
+    val state by ScopedThemeManager.state.collectAsState()
+    if (!ScopedThemeManager.applyToApp || !state.separatePlayerTheme) {
+        content()
+        return
+    }
+    val dark = isDarkTheme()
+    MaterialTheme(
+        colorScheme = MaterialTheme.colorScheme.withAccent(state.playerTheme.accentHex, dark),
+        shapes = MaterialTheme.shapes,
+        typography = MaterialTheme.typography,
+        content = content,
+    )
+}
+
 @Composable
 fun isDarkTheme(): Boolean = when (ThemeSettings.mode) {
     "dark", "amoled" -> true
@@ -534,7 +568,7 @@ fun YtxTubeTheme(content: @Composable () -> Unit) {
     val isAmoled = ThemeSettings.mode == "amoled"
     val context = LocalContext.current
     val baseScheme = schemeFor(context, ThemeSettings.seed, dark)
-    val scheme = if (isAmoled) {
+    val themed = if (isAmoled) {
         baseScheme.copy(
             background = Color.Black,
             surface = Color.Black,
@@ -549,6 +583,10 @@ fun YtxTubeTheme(content: @Composable () -> Unit) {
             outlineVariant = Color(0xFF1F1F1F),
         )
     } else baseScheme
+    val scopedState by ScopedThemeManager.state.collectAsState()
+    val scheme = if (ScopedThemeManager.applyToApp) {
+        themed.withAccent(scopedState.homeTheme.accentHex, dark)
+    } else themed
 
     SystemBars(dark, scheme.surface)
     val baseDensity = androidx.compose.ui.platform.LocalDensity.current

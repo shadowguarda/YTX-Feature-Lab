@@ -44,6 +44,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -810,6 +811,30 @@ private fun AppearanceThemeContent(context: Context) {
             checked = GlassSettings.enabled,
             onCheckedChange = { GlassSettings.updateEnabled(it) },
         )
+        var showGlassStudio by remember { mutableStateOf(false) }
+        var showAccentSheet by remember { mutableStateOf(false) }
+        var showPlayerLayout by remember { mutableStateOf(false) }
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "Liquid Glass Studio",
+            subtitle = "Blur, refraction, depth, borders and glass material",
+            onClick = { showGlassStudio = true },
+        )
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "Accent colours",
+            subtitle = "Pick or type an accent, with its own colour for the player",
+            onClick = { showAccentSheet = true },
+        )
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "Player controls",
+            subtitle = "Choose which buttons the video player shows",
+            onClick = { showPlayerLayout = true },
+        )
+        if (showGlassStudio) LiquidGlassDesignStudioSheet(onDismiss = { showGlassStudio = false })
+        if (showAccentSheet) SettingsSheetHost(onDismiss = { showAccentSheet = false }) { ScopedThemeSheet(onDismiss = { showAccentSheet = false }) }
+        if (showPlayerLayout) SettingsSheetHost(onDismiss = { showPlayerLayout = false }) { PlayerLayoutCustomizerSheet(onDismiss = { showPlayerLayout = false }) }
 
         HorizontalDivider(color = c.onSurface.copy(alpha = 0.08f), modifier = Modifier.padding(vertical = 4.dp))
 
@@ -2174,5 +2199,17 @@ private fun SettingsSwitchRow(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(checkedTrackColor = c.primary),
         )
+    }
+}
+
+/** Shows a Labs-style sheet body inside its own scrollable bottom sheet. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsSheetHost(onDismiss: () -> Unit, content: @Composable () -> Unit) {
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Column(Modifier.verticalScroll(rememberScrollState()).then(Modifier.navigationBarsPadding())) { content() }
     }
 }

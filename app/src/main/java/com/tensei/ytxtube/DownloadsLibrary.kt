@@ -121,6 +121,30 @@ object DownloadsViewLogic {
     }.getOrDefault(-1L)
 }
 
+/** Speed and time-left maths for the progress line (pure, unit-tested). */
+object DownloadProgressLogic {
+    /** Bytes per second for [bytes] moved in [millis]; 0 for a stall, a restart (negative) or no time. */
+    fun instantSpeed(bytes: Long, millis: Long): Long =
+        if (bytes <= 0L || millis <= 0L) 0L else bytes * 1000L / millis
+
+    /** Blends a new reading into the shown speed so the number does not jump about. */
+    fun smooth(old: Long, instant: Long): Long = if (old <= 0L) instant else (old * 7 + instant * 3) / 10
+
+    /** Seconds left at [speedBps], or -1 when it cannot be worked out. */
+    fun etaSeconds(total: Long, downloaded: Long, speedBps: Long): Long =
+        if (total <= 0L || speedBps <= 0L || downloaded < 0L) -1L else ((total - downloaded).coerceAtLeast(0L) + speedBps - 1) / speedBps
+
+    fun formatSpeed(bps: Long): String = if (bps <= 0L) "" else formatBytes(bps) + "/s"
+
+    /** "45 s left", "3 min left", "1 h 05 min left"; empty when unknown. */
+    fun formatEta(seconds: Long): String = when {
+        seconds < 0L -> ""
+        seconds < 60L -> "${seconds.coerceAtLeast(1L)} s left"
+        seconds < 3600L -> "${(seconds + 59) / 60} min left"
+        else -> String.format(Locale.ROOT, "%d h %02d min left", seconds / 3600, (seconds % 3600) / 60)
+    }
+}
+
 object DownloadsViewPrefs {
     private const val PREFS = "downloads_view"
     private var prefs: android.content.SharedPreferences? = null

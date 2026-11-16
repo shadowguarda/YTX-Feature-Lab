@@ -831,17 +831,19 @@ fun YtxTubeApp() {
 
         if (showFullscreen) {
             Box(Modifier.fillMaxSize().layerBackdrop(playerBackdrop)) {
-                FullscreenPlayer(player, onExit = { exitFullscreen() })
+                ScopedPlayerTheme { FullscreenPlayer(player, onExit = { exitFullscreen() }) }
             }
         } else if (showPlayer) {
             Box(Modifier.fillMaxSize().layerBackdrop(playerBackdrop)) {
-                PlayerScreen(
-                    player, morph,
-                    onOpen = player::open,
-                    onCollapse = { player.expanded = false },
-                    onFullscreen = { toggleFullscreen() },
-                    onSignIn = { signingIn = true },
-                )
+                ScopedPlayerTheme {
+                    PlayerScreen(
+                        player, morph,
+                        onOpen = player::open,
+                        onCollapse = { player.expanded = false },
+                        onFullscreen = { toggleFullscreen() },
+                        onSignIn = { signingIn = true },
+                    )
+                }
             }
         }
 

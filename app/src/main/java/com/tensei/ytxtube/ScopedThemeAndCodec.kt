@@ -145,16 +145,49 @@ object ThemeBundleCodec {
     }
 }
 
+/** Colour maths for accent colours (pure, unit-tested). */
+object ThemeAccentLogic {
+    /** Black or white text, whichever reads better on [accentHex]; null for an invalid colour. */
+    fun onAccentIsLight(accentHex: String): Boolean? =
+        if (ThemePackageValidator.isValidHexColor(accentHex)) ThemePackageValidator.relativeLuminance(accentHex) < 0.4 else null
+
+    /** Mixes [ratio] (0..1) of [accent] into [base]; both are #RRGGBB. Returns #RRGGBB, or [base] if either is invalid. */
+    fun blendHex(baseHex: String, accentHex: String, ratio: Float): String {
+        val b = ThemePackageValidator.parseRgb(baseHex) ?: return baseHex
+        val a = ThemePackageValidator.parseRgb(accentHex) ?: return baseHex
+        val t = ratio.coerceIn(0f, 1f)
+        fun mix(x: Int, y: Int) = (x + (y - x) * t).toInt().coerceIn(0, 255)
+        return String.format(java.util.Locale.ROOT, "#%02X%02X%02X", mix(b.first, a.first), mix(b.second, a.second), mix(b.third, a.third))
+    }
+
+    /** Cleans what was typed into a colour box: adds the # and upper-cases; null when it is not a full #RRGGBB. */
+    fun normalizeHex(input: String): String? {
+        val t = input.trim().let { if (it.startsWith("#")) it else "#$it" }
+        return if (ThemePackageValidator.isValidHexColor(t)) t.uppercase(java.util.Locale.ROOT) else null
+    }
+}
+
 object ScopedThemeManager {
     private const val PREFS_NAME = "scoped_theme_prefs"
     private const val KEY_JSON = "scoped_theme_json"
+    private const val KEY_APPLY = "apply_to_app"
     private var prefs: SharedPreferences? = null
+
+    /** Off by default so the chosen theme is not recoloured until the viewer opts in. */
+    var applyToApp by mutableStateOf(false)
+        private set
+
+    fun updateApplyToApp(value: Boolean) {
+        applyToApp = value
+        prefs?.edit()?.putBoolean(KEY_APPLY, value)?.apply()
+    }
 
     private val _state = MutableStateFlow(ScopedThemeState())
     val state: StateFlow<ScopedThemeState> = _state.asStateFlow()
 
     fun init(context: Context) {
         val p = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).also { prefs = it }
+        applyToApp = p.getBoolean(KEY_APPLY, false)
         val saved = p.getString(KEY_JSON, null)
         if (!saved.isNullOrBlank()) {
             val result = ThemeBundleCodec.importJson(saved)
@@ -243,6 +276,30 @@ fun ScopedThemeSheet(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                Text("Use these accent colours in the app", fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = if (ScopedThemeManager.applyToApp) "On: buttons, sliders and highlights follow the accent below" else "Off: the app keeps the theme chosen in Appearance",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = ScopedThemeManager.applyToApp,
+                onCheckedChange = { ScopedThemeManager.updateApplyToApp(it) },
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(glassFill(0.55f))
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text("Separate Player Theme", fontWeight = FontWeight.SemiBold)
                 Text(
                     text = "Use a dedicated accent & glass tint inside the video/music player",
@@ -263,6 +320,7 @@ fun ScopedThemeSheet(
             accents = quickAccents,
             onSelect = { ScopedThemeManager.updateScopeAccent(ThemeScope.HOME, it) },
         )
+        AccentHexField("Custom home accent", state.homeTheme.accentHex) { ScopedThemeManager.updateScopeAccent(ThemeScope.HOME, it) }
 
         if (state.separatePlayerTheme) {
             Spacer(modifier = Modifier.height(10.dp))
@@ -272,6 +330,7 @@ fun ScopedThemeSheet(
                 accents = quickAccents,
                 onSelect = { ScopedThemeManager.updateScopeAccent(ThemeScope.PLAYER, it) },
             )
+            AccentHexField("Custom player accent", state.playerTheme.accentHex) { ScopedThemeManager.updateScopeAccent(ThemeScope.PLAYER, it) }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -359,4 +418,23 @@ private fun ScopeAccentPicker(
             }
         }
     }
+}
+
+/** Type any #RRGGBB colour; it is only applied when it is a complete, valid colour. */
+@Composable
+private fun AccentHexField(label: String, currentHex: String, onApply: (String) -> Unit) {
+    var text by remember(currentHex) { mutableStateOf(currentHex) }
+    val parsed = ThemeAccentLogic.normalizeHex(text)
+    OutlinedTextField(
+        value = text,
+        onValueChange = {
+            text = it
+            ThemeAccentLogic.normalizeHex(it)?.let(onApply)
+        },
+        label = { Text(label) },
+        singleLine = true,
+        isError = text.isNotBlank() && parsed == null,
+        supportingText = { Text(if (text.isNotBlank() && parsed == null) "Use six digits like #7C4DFF" else "Applies as soon as it is a full colour") },
+        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+    )
 }
