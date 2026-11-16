@@ -320,7 +320,7 @@ fun DownloadsScreen(
                         query = query,
                         onQuery = { query = it },
                         sort = DownloadsViewPrefs.sort,
-                        onSort = { DownloadsViewPrefs.setSort(it) },
+                        onSort = { DownloadsViewPrefs.updateSort(it) },
                         selecting = selecting,
                         canSelect = shown.isNotEmpty(),
                         onToggleSelect = { selecting = !selecting; selection = emptySet() },

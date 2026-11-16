@@ -147,18 +147,18 @@ object DownloadsViewPrefs {
         showStorage = p.getBoolean("storage", true)
     }
 
-    fun setSort(value: DownloadSort) { sort = value; prefs?.edit()?.putString("sort", value.name)?.apply() }
-    fun setDensity(value: DownloadDensity) { density = value; prefs?.edit()?.putString("density", value.name)?.apply() }
-    fun setShowThumbnails(value: Boolean) { showThumbnails = value; prefs?.edit()?.putBoolean("thumbs", value)?.apply() }
-    fun setGroupByChannel(value: Boolean) { groupByChannel = value; prefs?.edit()?.putBoolean("group", value)?.apply() }
-    fun setShowStorage(value: Boolean) { showStorage = value; prefs?.edit()?.putBoolean("storage", value)?.apply() }
+    fun updateSort(value: DownloadSort) { sort = value; prefs?.edit()?.putString("sort", value.name)?.apply() }
+    fun updateDensity(value: DownloadDensity) { density = value; prefs?.edit()?.putString("density", value.name)?.apply() }
+    fun updateShowThumbnails(value: Boolean) { showThumbnails = value; prefs?.edit()?.putBoolean("thumbs", value)?.apply() }
+    fun updateGroupByChannel(value: Boolean) { groupByChannel = value; prefs?.edit()?.putBoolean("group", value)?.apply() }
+    fun updateShowStorage(value: Boolean) { showStorage = value; prefs?.edit()?.putBoolean("storage", value)?.apply() }
 
     fun reset() {
-        setSort(DownloadSort.Recent)
-        setDensity(DownloadDensity.Comfortable)
-        setShowThumbnails(true)
-        setGroupByChannel(false)
-        setShowStorage(true)
+        updateSort(DownloadSort.Recent)
+        updateDensity(DownloadDensity.Comfortable)
+        updateShowThumbnails(true)
+        updateGroupByChannel(false)
+        updateShowStorage(true)
     }
 }
 
@@ -288,24 +288,24 @@ internal fun DownloadsCustomizeSheet(onDismiss: () -> Unit) {
             YtxSectionLabel("Row size")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DownloadDensity.entries.forEach { d ->
-                    YtxChip(label = d.label, selected = DownloadsViewPrefs.density == d) { DownloadsViewPrefs.setDensity(d) }
+                    YtxChip(label = d.label, selected = DownloadsViewPrefs.density == d) { DownloadsViewPrefs.updateDensity(d) }
                 }
             }
             YtxSectionLabel("Default order")
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DownloadSort.entries.forEach { s ->
-                    YtxChip(label = s.label, selected = DownloadsViewPrefs.sort == s) { DownloadsViewPrefs.setSort(s) }
+                    YtxChip(label = s.label, selected = DownloadsViewPrefs.sort == s) { DownloadsViewPrefs.updateSort(s) }
                 }
             }
             Spacer(Modifier.height(8.dp))
             YtxSwitchRow("Show thumbnails", "Turn off for a plain text list", DownloadsViewPrefs.showThumbnails) {
-                DownloadsViewPrefs.setShowThumbnails(it)
+                DownloadsViewPrefs.updateShowThumbnails(it)
             }
             YtxSwitchRow("Group finished downloads by channel", "Adds a heading for each channel", DownloadsViewPrefs.groupByChannel) {
-                DownloadsViewPrefs.setGroupByChannel(it)
+                DownloadsViewPrefs.updateGroupByChannel(it)
             }
             YtxSwitchRow("Show storage summary", "Total size of downloads and free space", DownloadsViewPrefs.showStorage) {
-                DownloadsViewPrefs.setShowStorage(it)
+                DownloadsViewPrefs.updateShowStorage(it)
             }
             Spacer(Modifier.height(8.dp))
             YtxChip(label = "Reset to defaults", selected = false) { DownloadsViewPrefs.reset() }
