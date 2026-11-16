@@ -65,7 +65,7 @@ class UiUpgradesLogicTest {
 
     @Test
     fun continueWatchingKeepsStartedUnfinishedVideosNewestFirst() {
-        fun s(id: String) = WatchSession(id, "T $id", "C", 0L, 10)
+        fun s(id: String) = LoggedVideo(id, "T $id", "C", 10, 0L, 1)
         val progress = mapOf("a" to 0.5f, "b" to 0.01f, "c" to 0.97f, "d" to 0.2f)
         val result = HomeLayoutLogic.continueWatching(listOf(s("a"), s("b"), s("c"), s("d"), s("e")), { progress[it] })
         assertEquals(listOf("a", "d"), result.map { it.videoId })

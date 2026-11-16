@@ -104,7 +104,7 @@ object HomeLayoutLogic {
     }
 
     /** Started but not finished videos, newest first: between 2% and 95% watched. */
-    fun continueWatching(recent: List<WatchSession>, progress: (String) -> Float?, max: Int = 12): List<WatchSession> =
+    fun continueWatching(recent: List<LoggedVideo>, progress: (String) -> Float?, max: Int = 12): List<LoggedVideo> =
         recent.filter { s -> progress(s.videoId)?.let { it in 0.02f..0.95f } == true }.take(max)
 }
 
