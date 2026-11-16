@@ -101,8 +101,50 @@ fun glassFill(alpha: Float = 1f): Color {
         return MaterialTheme.colorScheme.surfaceContainerHigh
     }
     val dark = isSystemInDarkTheme()
-    return if (dark) Color(0xFF121212).copy(alpha = 0.38f * alpha) else
-        Color(0xFFFAFAFA).copy(alpha = 0.34f * alpha)
+    // The Liquid Glass Studio material sets how see-through every surface is.
+    val a = GlassTuning.fillAlpha(LiquidGlassStudio.materialPreset.surfaceAlpha, dark, alpha)
+    return if (dark) Color(0xFF121212).copy(alpha = a) else Color(0xFFFAFAFA).copy(alpha = a)
+}
+
+/** Which Studio blur slider a glass surface follows. */
+enum class GlassRole { General, Player, Sheet, Music, Header, Nav }
+
+/**
+ * Turns the Liquid Glass Studio settings into glass. Each surface keeps the design values it was built
+ * with and they are scaled by how far the Studio value has moved from its factory default, so
+ * untouched settings change nothing and a slider at zero turns that effect off.
+ */
+object GlassTuning {
+    const val DEFAULT_PLAYER_BLUR = 20f
+    const val DEFAULT_SHEET_BLUR = 26f
+    const val DEFAULT_MUSIC_BLUR = 24f
+    const val DEFAULT_HEADER_BLUR = 16f
+    const val DEFAULT_NAV_BLUR = 10f
+    const val DEFAULT_REFRACTION_HEIGHT = 14f
+    const val DEFAULT_REFRACTION_AMOUNT = 22f
+    const val DEFAULT_INNER_SHADOW = 0.5f
+    const val DEFAULT_SURFACE_ALPHA = 0.38f
+    const val DEFAULT_BORDER_ALPHA = 0.20f
+
+    fun ratio(value: Float, baseline: Float): Float = if (baseline <= 0f) 1f else (value / baseline).coerceAtLeast(0f)
+
+    fun scale(base: Float, value: Float, baseline: Float): Float = base * ratio(value, baseline)
+
+    /** Fill opacity: dark glass uses [surfaceAlpha] as is, light glass is a little clearer. */
+    fun fillAlpha(surfaceAlpha: Float, dark: Boolean, alpha: Float): Float =
+        ((if (dark) surfaceAlpha else surfaceAlpha * 0.34f / DEFAULT_SURFACE_ALPHA) * alpha).coerceIn(0f, 1f)
+
+    /** Edge line opacity of the fallback glass: 0.16 at the default material. */
+    fun borderAlpha(presetBorderAlpha: Float): Float = (presetBorderAlpha * 0.8f).coerceIn(0f, 1f)
+
+    /** (current slider value, factory default) for a role. */
+    fun blurFor(role: GlassRole): Pair<Float, Float> = when (role) {
+        GlassRole.General, GlassRole.Player -> LiquidGlassStudio.playerBlurDp.toFloat() to DEFAULT_PLAYER_BLUR
+        GlassRole.Sheet -> LiquidGlassStudio.sheetBlurDp.toFloat() to DEFAULT_SHEET_BLUR
+        GlassRole.Music -> LiquidGlassStudio.musicBlurDp.toFloat() to DEFAULT_MUSIC_BLUR
+        GlassRole.Header -> LiquidGlassStudio.headerBlurDp.toFloat() to DEFAULT_HEADER_BLUR
+        GlassRole.Nav -> LiquidGlassStudio.navBarBlurDp.toFloat() to DEFAULT_NAV_BLUR
+    }
 }
 
 /**
@@ -133,6 +175,7 @@ data class GlassSpec(
 @Composable
 fun glassSpec(
     shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(26.dp),
+    role: GlassRole = GlassRole.General,
     tint: Color = glassFill(),
     blur: Dp = 18.dp,
     refractionHeight: Dp = 14.dp,
@@ -141,19 +184,23 @@ fun glassSpec(
     highlight: Highlight? = Highlight.Default,
     innerShadow: InnerShadow? = InnerShadow.Default.copy(radius = 10.dp, alpha = 0.5f),
     chromaticAberration: Boolean = true,
-): GlassSpec = GlassSpec(
+): GlassSpec {
+    val (studioBlur, defaultBlur) = GlassTuning.blurFor(role)
+    val shadowScale = GlassTuning.ratio(LiquidGlassStudio.innerShadowAlpha, GlassTuning.DEFAULT_INNER_SHADOW)
+    return GlassSpec(
     shape = shape,
     // With Liquid Glass off every tint becomes a solid Material fill, even when
     // a caller supplied a translucent colour for the shader path.
     tint = if (GlassQuality.effectsSupported) tint else tint.copy(alpha = 1f),
-    blur = blur,
-    refractionHeight = refractionHeight,
-    refractionAmount = refractionAmount,
+    blur = GlassTuning.scale(blur.value, studioBlur, defaultBlur).dp,
+    refractionHeight = GlassTuning.scale(refractionHeight.value, LiquidGlassStudio.refractionHeightDp.toFloat(), GlassTuning.DEFAULT_REFRACTION_HEIGHT).dp,
+    refractionAmount = GlassTuning.scale(refractionAmount.value, LiquidGlassStudio.refractionAmountDp.toFloat(), GlassTuning.DEFAULT_REFRACTION_AMOUNT).dp,
     shadow = shadow,
     highlight = highlight,
-    innerShadow = innerShadow,
-    chromaticAberration = chromaticAberration,
-)
+    innerShadow = innerShadow?.let { it.copy(alpha = (it.alpha * shadowScale).coerceIn(0f, 1f)) },
+    chromaticAberration = chromaticAberration && LiquidGlassStudio.chromaticAberration,
+    )
+}
 
 
 fun Modifier.liquidGlass(backdrop: Backdrop, spec: GlassSpec): Modifier =
@@ -163,12 +210,15 @@ fun Modifier.liquidGlass(backdrop: Backdrop, spec: GlassSpec): Modifier =
             shape = { spec.shape },
             effects = {
                 vibrancy()
-                blur(spec.blur.toPx())
-                lens(
-                    spec.refractionHeight.toPx(),
-                    spec.refractionAmount.toPx(),
-                    chromaticAberration = spec.chromaticAberration,
-                )
+                // A Studio slider at zero switches that effect off.
+                if (spec.blur.value > 0f) blur(spec.blur.toPx())
+                if (spec.refractionHeight.value > 0f && spec.refractionAmount.value > 0f) {
+                    lens(
+                        spec.refractionHeight.toPx(),
+                        spec.refractionAmount.toPx(),
+                        chromaticAberration = spec.chromaticAberration,
+                    )
+                }
             },
             highlight = spec.highlight?.let { h -> { h } },
             shadow = spec.shadow?.let { s -> { s } },
@@ -208,5 +258,9 @@ private fun Modifier.fallbackGlass(spec: GlassSpec): Modifier =
                     ),
                 )
             }
-            .border(1.dp, Color.White.copy(alpha = 0.16f), spec.shape)
+            .border(
+                LiquidGlassStudio.borderWidthDp.dp,
+                Color.White.copy(alpha = GlassTuning.borderAlpha(LiquidGlassStudio.materialPreset.borderAlpha)),
+                spec.shape,
+            )
     }

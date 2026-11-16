@@ -1820,6 +1820,7 @@ private fun androidx.compose.foundation.layout.BoxScope.BitChordMiniDetails(
                 backdrop,
                 glassSpec(
                     shape = CircleShape,
+                    role = GlassRole.Player,
                     tint = glassFill(0.45f),
                     blur = 12.dp,
                     refractionHeight = 7.dp,

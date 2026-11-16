@@ -682,6 +682,7 @@ fun VideoContent(
                         videoBackdrop,
                         glassSpec(
                             shape = CircleShape,
+                            role = GlassRole.Player,
                             tint = glassOverlayFill(0.5f),
                             blur = 20.dp,
                             refractionHeight = 12.dp,
@@ -1185,6 +1186,7 @@ fun PlayerSettingsSheet(state: PlayerState, backdrop: Backdrop, onDismiss: () ->
     val shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
     val spec = glassSpec(
         shape = shape,
+        role = GlassRole.Sheet,
         tint = glassFill(0.62f),
         blur = 26.dp,
         refractionHeight = 18.dp,
@@ -1471,6 +1473,7 @@ private fun GlassButton(
                         backdrop,
                         glassSpec(
                             shape = CircleShape,
+                            role = GlassRole.Player,
                             tint = glassOverlayFill(0.42f),
                             blur = 16.dp,
                             refractionHeight = 9.dp,

@@ -382,6 +382,7 @@ private fun PlayerGlassSheet(
     val shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
     val spec = glassSpec(
         shape = shape,
+        role = GlassRole.Sheet,
         tint = glassFill(0.62f),
         blur = 26.dp,
         refractionHeight = 18.dp,

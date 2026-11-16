@@ -543,6 +543,7 @@ fun ShortsScreen(
                 val backdrop = rememberLayerBackdrop()
                 val glass = glassSpec(
                     shape = CircleShape,
+                    role = GlassRole.Player,
                     tint = glassTint,
                     blur = 16.dp,
                     refractionHeight = 9.dp,

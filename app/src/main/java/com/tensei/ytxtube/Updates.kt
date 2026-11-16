@@ -343,6 +343,7 @@ fun UpdateOverlay(state: UpdateState, backdrop: Backdrop) {
                             backdrop,
                             glassSpec(
                                 shape = RoundedCornerShape(30.dp),
+                                role = GlassRole.Sheet,
                                 tint = glassFill(0.9f),
                                 blur = 26.dp,
                                 refractionHeight = 16.dp,
