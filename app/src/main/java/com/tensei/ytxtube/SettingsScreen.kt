@@ -812,6 +812,7 @@ private fun AppearanceThemeContent(context: Context) {
             onCheckedChange = { GlassSettings.updateEnabled(it) },
         )
         var showGlassStudio by remember { mutableStateOf(false) }
+        var showIslandSettings by remember { mutableStateOf(false) }
         var showAccentSheet by remember { mutableStateOf(false) }
         var showPlayerLayout by remember { mutableStateOf(false) }
         SettingsRow(
@@ -844,6 +845,13 @@ private fun AppearanceThemeContent(context: Context) {
             subtitle = "The control panel from the slider icon at the top of every screen",
             onClick = { UiUpgrades.quickPanelOpen = true },
         )
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "Dynamic island",
+            subtitle = "Position, size, colour, shape, gestures and what it shows",
+            onClick = { showIslandSettings = true },
+        )
+        if (showIslandSettings) IslandSettingsSheet(onDismiss = { showIslandSettings = false })
         if (showGlassStudio) LiquidGlassDesignStudioSheet(onDismiss = { showGlassStudio = false })
         if (showAccentSheet) SettingsSheetHost(onDismiss = { showAccentSheet = false }) { ScopedThemeSheet(onDismiss = { showAccentSheet = false }) }
         if (showPlayerLayout) SettingsSheetHost(onDismiss = { showPlayerLayout = false }) { PlayerLayoutCustomizerSheet(onDismiss = { showPlayerLayout = false }) }

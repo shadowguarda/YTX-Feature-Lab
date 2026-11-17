@@ -993,7 +993,8 @@ fun YtxTubeApp() {
         DynamicIsland(
             player = player,
             visible = !showPlayer && !showFullscreen && !openSettings && shortsEntry == null && !pip.active && tab != Tab.Shorts,
-            onExpand = { player.expanded = true },
+            onOpenPlayer = { player.expanded = true },
+            onOpenDownloads = { tab = Tab.Downloads },
             modifier = Modifier.align(Alignment.TopCenter),
         )
         QuickSettingsPanel(onOpenSettings = { openSettings = true })

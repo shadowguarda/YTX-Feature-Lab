@@ -122,83 +122,6 @@ internal suspend fun loadArtworkColor(context: Context, url: String, vivid: Bool
     }.getOrNull()
 }
 
-// ---------------------------------------------------------------------------------------------
-// Dynamic Island: a floating playback pill
-// ---------------------------------------------------------------------------------------------
-
-/**
- * A pill at the top of the screen with the artwork (ringed by playback progress), title and controls.
- * It shows while something plays, stays for a few seconds after a pause, and a tap opens the player.
- */
-@Composable
-fun DynamicIsland(player: PlayerState, visible: Boolean, onExpand: () -> Unit, modifier: Modifier = Modifier) {
-    var hold by remember { mutableStateOf(false) }
-    LaunchedEffect(player.isPlaying, player.current?.id) {
-        if (player.isPlaying) hold = true else if (hold) {
-            delay(UiUpgrades.islandPauseDurationMs.toLong())
-            hold = false
-        }
-    }
-    val item = player.current
-    val show = UiUpgrades.islandEnabled && visible && item != null && (player.isPlaying || hold)
-    AnimatedVisibility(
-        visible = show,
-        modifier = modifier,
-        enter = slideInVertically(tween(260)) { -it } + fadeIn(tween(180)) + scaleIn(tween(260), initialScale = 0.8f),
-        exit = slideOutVertically(tween(200)) { -it } + fadeOut(tween(140)) + scaleOut(tween(200), targetScale = 0.85f),
-    ) {
-        val current = item ?: return@AnimatedVisibility
-        val fraction = IslandLogic.fraction(player.positionMs, player.durationMs)
-        Row(
-            Modifier
-                .statusBarsPadding()
-                .padding(top = 6.dp)
-                .widthIn(max = 320.dp)
-                .height(52.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(Color(0xFF0B0B0D).copy(alpha = 0.95f))
-                .clickable(onClickLabel = "Open player", onClick = onExpand)
-                .padding(start = 8.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-                if (UiUpgrades.islandShowProgress) {
-                    Canvas(Modifier.fillMaxSize()) {
-                        val stroke = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
-                        val inset = stroke.width / 2f
-                        val arc = Size(size.width - stroke.width, size.height - stroke.width)
-                        drawArc(Color.White.copy(alpha = 0.22f), 0f, 360f, false, Offset(inset, inset), arc, style = stroke)
-                        drawArc(Color.White, -90f, 360f * fraction, false, Offset(inset, inset), arc, style = stroke)
-                    }
-                }
-                Thumbnail(current.thumbnail, Modifier.size(30.dp).clip(CircleShape), radius = 15, videoId = current.id)
-            }
-            Spacer(Modifier.width(8.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    current.title, color = Color.White, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    current.channel, color = Color.White.copy(alpha = 0.65f), fontSize = 10.5.sp,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (UiUpgrades.islandShowControls) {
-                IconButton(onClick = { player.togglePlay() }, modifier = Modifier.size(40.dp)) {
-                    Icon(
-                        if (player.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                        if (player.isPlaying) "Pause" else "Play",
-                        tint = Color.White,
-                    )
-                }
-                IconButton(onClick = { player.skipNext() }, modifier = Modifier.size(40.dp)) {
-                    Icon(Icons.Rounded.SkipNext, "Next", tint = Color.White)
-                }
-            }
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------------------------
 // Ambient wallpaper
@@ -454,36 +377,10 @@ fun LayoutCustomizeSheet(onDismiss: () -> Unit) {
                 )
             }
             YtxSectionLabel("Dynamic Island")
-            YtxNote("Tune the in-app playback island. System notifications and calls remain in Android's notification shade.")
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Show playback island", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                    Text("Display the floating player pill while media is active", fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = UiUpgrades.islandEnabled, onCheckedChange = UiUpgrades::updateIslandEnabled)
-            }
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Playback progress ring", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                    Text("Show playback progress around the artwork", fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = UiUpgrades.islandShowProgress, onCheckedChange = UiUpgrades::updateIslandShowProgress, enabled = UiUpgrades.islandEnabled)
-            }
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Quick playback controls", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                    Text("Show play/pause and next buttons on the pill", fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = UiUpgrades.islandShowControls, onCheckedChange = UiUpgrades::updateIslandShowControls, enabled = UiUpgrades.islandEnabled)
-            }
-            Text("Keep visible after pause · ${UiUpgrades.islandPauseDurationMs / 1_000}s", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-            Slider(
-                value = UiUpgrades.islandPauseDurationMs.toFloat() / 1_000f,
-                onValueChange = { UiUpgrades.updateIslandPauseDuration((it * 1_000f).toInt()) },
-                valueRange = 1f..15f,
-                steps = 13,
-                enabled = UiUpgrades.islandEnabled,
-            )
+            YtxNote("Position, size, colour, gestures, downloads and more have their own sheet.")
+            var islandSheet by remember { mutableStateOf(false) }
+            TextButton(onClick = { islandSheet = true }) { Text("Open Dynamic Island settings") }
+            if (islandSheet) IslandSettingsSheet(onDismiss = { islandSheet = false })
             YtxSectionLabel("Home shelves")
             YtxNote("Rows shown above your home feed. A shelf with nothing to show stays out of the way.")
             shelves.forEachIndexed { i, item ->
@@ -592,11 +489,6 @@ fun LazyListScope.homeShelfItems(lib: LibraryData, onOpen: (VideoItem) -> Unit) 
                 HomeLayoutLogic.SUBSCRIPTIONS -> SubscriptionsShelf(lib, onOpen)
                 HomeLayoutLogic.PLANNED -> PlannedShelf(onOpen)
             }
-        }
-    }
-    item(key = "shelf_customize") {
-        TextButton(onClick = { UiUpgrades.layoutSheetOpen = true }, modifier = Modifier.padding(horizontal = 8.dp)) {
-            Text("Customize home layout", fontSize = 12.5.sp)
         }
     }
 }
