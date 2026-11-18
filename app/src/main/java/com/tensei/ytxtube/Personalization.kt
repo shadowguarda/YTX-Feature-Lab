@@ -152,7 +152,7 @@ fun PersonalizationStudioSheet(onDismiss: () -> Unit) {
                 Text("Preview card", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Text("Sheet corner ${LiquidGlassStudio.sheetCornerRadiusDp} dp · ${LiquidGlassStudio.animationPreset.label}", fontSize = 12.sp, color = c.onSurfaceVariant)
                 Spacer(Modifier.height(8.dp))
-                Row(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(Brush.horizontalGradient(listOf(studioGlowColor(), studioGlowColor(true)))))
+                androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(Brush.horizontalGradient(listOf(studioGlowColor(), studioGlowColor(true)))))
             }
 
             YtxSectionLabel("Accent colour")
