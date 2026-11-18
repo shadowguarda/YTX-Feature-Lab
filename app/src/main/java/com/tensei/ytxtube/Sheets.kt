@@ -71,7 +71,8 @@ fun VideoOptionsSheet(video: VideoItem, player: PlayerState, onDismiss: () -> Un
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = c.surfaceContainerLow,
+        shape = studioSheetShape(),
+        containerColor = studioSheetContainer(c.surfaceContainerLow),
     ) {
         Row(Modifier.padding(horizontal = 20.dp).padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Thumbnail(video.thumbnail, Modifier.width(112.dp).aspectRatio(16f / 9f), radius = 14)
@@ -150,7 +151,7 @@ fun QueueCard(player: PlayerState, onOpen: () -> Unit) {
 @Composable
 fun QueueSheet(player: PlayerState, onDismiss: () -> Unit) {
     val c = MaterialTheme.colorScheme
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.surfaceContainerLow) {
+    ModalBottomSheet(onDismissRequest = onDismiss, shape = studioSheetShape(), containerColor = studioSheetContainer(c.surfaceContainerLow)) {
         Row(Modifier.padding(horizontal = 20.dp).padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Queue", fontFamily = RoundedHeavy, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp, modifier = Modifier.weight(1f))
             if (player.queue.isNotEmpty()) {
@@ -359,7 +360,8 @@ fun SubtitlesSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = c.surfaceContainerLow,
+        shape = studioSheetShape(),
+        containerColor = studioSheetContainer(c.surfaceContainerLow),
     ) {
         Column(
             modifier = Modifier

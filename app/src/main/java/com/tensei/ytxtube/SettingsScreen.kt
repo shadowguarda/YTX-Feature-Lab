@@ -813,6 +813,7 @@ private fun AppearanceThemeContent(context: Context) {
         )
         var showGlassStudio by remember { mutableStateOf(false) }
         var showIslandSettings by remember { mutableStateOf(false) }
+        var showPersonalization by remember { mutableStateOf(false) }
         var showAccentSheet by remember { mutableStateOf(false) }
         var showPlayerLayout by remember { mutableStateOf(false) }
         SettingsRow(
@@ -845,6 +846,13 @@ private fun AppearanceThemeContent(context: Context) {
             subtitle = "The control panel from the slider icon at the top of every screen",
             onClick = { UiUpgrades.quickPanelOpen = true },
         )
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "Personalization Studio",
+            subtitle = "Accent HEX, glow colours, sheet corners and transparency, animation speed, nav indicator, JSON import and export",
+            onClick = { showPersonalization = true },
+        )
+        if (showPersonalization) PersonalizationStudioSheet(onDismiss = { showPersonalization = false })
         SettingsRow(
             icon = Icons.Rounded.Tune,
             title = "Dynamic island",

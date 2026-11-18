@@ -543,6 +543,11 @@ object LiquidGlassStudio {
         saveAll()
     }
 
+    fun updateSheetSurfaceAlpha(value: Float) {
+        sheetSurfaceAlpha = value.coerceIn(0.35f, 0.68f)
+        saveAll()
+    }
+
     fun applyThemePackage(pkg: GlassThemePackage) {
         ThemeSettings.chooseMode(pkg.mode)
         ThemeSettings.choose(pkg.seedHex)

@@ -976,6 +976,7 @@ fun MiniPlayer(
                 }
             )
             .border(1.dp, glassBorder, shape)
+            .studioNeonBorder(shape, 1.5.dp)
             .clip(shape)
     ) {
         if (state.isMusicMode) {

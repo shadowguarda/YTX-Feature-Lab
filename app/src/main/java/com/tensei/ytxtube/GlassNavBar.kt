@@ -10,6 +10,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -47,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -303,10 +305,14 @@ fun LiquidBottomTabs(
 
         // 2. Moving active tab indicator pill. It stays *behind* the tab row so
         // the icons and labels are never distorted by the glass lens.
+        val indicatorStyle = LiquidGlassStudio.navIndicatorStyle
+        val pillVisible = indicatorStyle == NavIndicatorStyle.LiquidPill || indicatorStyle == NavIndicatorStyle.FrostedSquircle
+        val squircle = indicatorStyle == NavIndicatorStyle.FrostedSquircle
         Box(
             Modifier
                 .padding(horizontal = 4f.dp)
                 .graphicsLayer {
+                    alpha = if (pillVisible) 1f else 0f
                     translationX =
                         if (isLtr) dampedDragAnimation.value * tabWidth + panelOffset
                         else size.width - (dampedDragAnimation.value + 1f) * tabWidth + panelOffset
@@ -315,7 +321,7 @@ fun LiquidBottomTabs(
                     if (glassSupported) {
                         Modifier.drawBackdrop(
                             backdrop = backdrop,
-                            shape = { Capsule() },
+                            shape = { if (squircle) RoundedCornerShape(16f.dp) else Capsule() },
                             effects = {
                                 val progress = dampedDragAnimation.pressProgress
                                 // Frosted at rest exactly like the bar itself; the blur
@@ -370,6 +376,35 @@ fun LiquidBottomTabs(
                 .height(56f.dp)
                 .fillMaxWidth(1f / tabsCount)
         )
+
+        // Alternative indicator marks (neon underline, floating orb) drawn under the active tab.
+        if (indicatorStyle == NavIndicatorStyle.NeonUnderline || indicatorStyle == NavIndicatorStyle.GlowingDot) {
+            val glow = studioGlowColor()
+            val glow2 = studioGlowColor(secondary = true)
+            Box(
+                Modifier
+                    .padding(horizontal = 4f.dp)
+                    .graphicsLayer {
+                        translationX =
+                            if (isLtr) dampedDragAnimation.value * tabWidth + panelOffset
+                            else size.width - (dampedDragAnimation.value + 1f) * tabWidth + panelOffset
+                    }
+                    .height(64f.dp)
+                    .fillMaxWidth(1f / tabsCount)
+                    .drawBehind {
+                        val cx = size.width / 2f
+                        val y = size.height - 5f.dp.toPx()
+                        if (indicatorStyle == NavIndicatorStyle.NeonUnderline) {
+                            val w = size.width * 0.5f
+                            drawRoundRect(glow.copy(alpha = 0.35f), androidx.compose.ui.geometry.Offset(cx - w / 2f - 4f.dp.toPx(), y - 3f.dp.toPx()), androidx.compose.ui.geometry.Size(w + 8f.dp.toPx(), 9f.dp.toPx()), androidx.compose.ui.geometry.CornerRadius(5f.dp.toPx()))
+                            drawRoundRect(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(glow, glow2), startX = cx - w / 2f, endX = cx + w / 2f), androidx.compose.ui.geometry.Offset(cx - w / 2f, y), androidx.compose.ui.geometry.Size(w, 3f.dp.toPx()), androidx.compose.ui.geometry.CornerRadius(2f.dp.toPx()))
+                        } else {
+                            drawCircle(glow.copy(alpha = 0.35f), 7f.dp.toPx(), androidx.compose.ui.geometry.Offset(cx, y))
+                            drawCircle(glow, 3.5f.dp.toPx(), androidx.compose.ui.geometry.Offset(cx, y))
+                        }
+                    }
+            )
+        }
 
         // 3. Tab icons and labels on top. The drag gestures live on this row so
         // the pill can stay behind the icons while drag-to-switch still works.
@@ -438,7 +473,7 @@ fun RowScope.LiquidNavTab(tab: Tab, selected: Boolean, onClick: () -> Unit) {
                 if (selected) tab.selectedIcon else tab.icon,
                 contentDescription = tab.label,
                 tint = contentColor,
-                modifier = Modifier.size(if (active) 18.dp else 22.dp)
+                modifier = Modifier.size(if (active) 18.dp else if (selected && LiquidGlassStudio.navIndicatorStyle == NavIndicatorStyle.MinimalScale) 27.dp else 22.dp)
             )
         }
 

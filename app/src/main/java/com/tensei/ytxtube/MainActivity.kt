@@ -560,9 +560,12 @@ fun YtxTubeApp() {
                 .fillMaxHeight(),
             transitionSpec = {
                 if (reduced) fadeIn(snap()) togetherWith fadeOut(snap())
-                else (fadeIn(tween(Motion.PageEnterMs, easing = Motion.Emphasized)) +
-                    slideInVertically(tween(Motion.PageRiseMs, easing = Motion.Emphasized)) { (it / 35).coerceIn(8, 24) }) togetherWith
-                    fadeOut(tween(Motion.PageExitMs))
+                else {
+                    val k = LiquidGlassStudio.animationPreset.durationMultiplier
+                    (fadeIn(tween(PersonalizationLogic.motionMs(Motion.PageEnterMs, k), easing = Motion.Emphasized)) +
+                        slideInVertically(tween(PersonalizationLogic.motionMs(Motion.PageRiseMs, k), easing = Motion.Emphasized)) { (it / 35).coerceIn(8, 24) }) togetherWith
+                        fadeOut(tween(PersonalizationLogic.motionMs(Motion.PageExitMs, k)))
+                }
             },
             label = "tabs",
         ) { t ->
