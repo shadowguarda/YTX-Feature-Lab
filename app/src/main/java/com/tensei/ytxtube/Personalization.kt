@@ -73,7 +73,7 @@ object PersonalizationLogic {
 
     /** The slider's transparency percent back to the stored surface alpha. */
     fun surfaceAlphaFromPercent(percent: Int): Float =
-        (DEFAULT_SHEET_ALPHA * (1f - percent.coerceIn(0, 65) / 100f)).coerceIn(0.35f, DEFAULT_SHEET_ALPHA)
+        (DEFAULT_SHEET_ALPHA * (1f - percent.coerceIn(0, 48) / 100f)).coerceIn(0.35f, DEFAULT_SHEET_ALPHA)
 }
 
 /** The Studio's sheet corner radius, as a top-corner shape. */
@@ -178,7 +178,7 @@ fun PersonalizationStudioSheet(onDismiss: () -> Unit) {
                 "${LiquidGlassStudio.sheetCornerRadiusDp} dp",
             ) { LiquidGlassStudio.updateGlowAndStyle(sheetRadius = it.toInt()) }
             YtxSliderRow(
-                "Sheet transparency", PersonalizationLogic.transparencyPercent(LiquidGlassStudio.sheetSurfaceAlpha).toFloat(), 0f..65f, 12,
+                "Sheet transparency", PersonalizationLogic.transparencyPercent(LiquidGlassStudio.sheetSurfaceAlpha).toFloat(), 0f..48f, 11,
                 "${PersonalizationLogic.transparencyPercent(LiquidGlassStudio.sheetSurfaceAlpha)}%",
             ) { LiquidGlassStudio.updateSheetSurfaceAlpha(PersonalizationLogic.surfaceAlphaFromPercent(it.toInt())) }
             YtxSliderRow(

@@ -19,7 +19,7 @@ class PersonalizationLogicTest {
     }
 
     @Test fun transparencyPercentRoundTrips() {
-        for (pct in listOf(0, 20, 40, 65)) {
+        for (pct in listOf(0, 20, 40, 48)) {
             val a = PersonalizationLogic.surfaceAlphaFromPercent(pct)
             assertEquals(pct, PersonalizationLogic.transparencyPercent(a))
         }
