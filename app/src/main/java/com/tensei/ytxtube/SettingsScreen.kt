@@ -2234,7 +2234,7 @@ private fun SettingsSwitchRow(
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsSheetHost(onDismiss: () -> Unit, content: @Composable () -> Unit) {
-    androidx.compose.material3.ModalBottomSheet(
+    FloatingSheet(
         onDismissRequest = onDismiss,
         sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {

@@ -551,7 +551,7 @@ private fun DownloadIsland(summary: DownloadIslandSummary, expanded: Boolean, on
 @Composable
 fun IslandSettingsSheet(onDismiss: () -> Unit) {
     val c = MaterialTheme.colorScheme
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+    FloatingSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Dynamic island", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)

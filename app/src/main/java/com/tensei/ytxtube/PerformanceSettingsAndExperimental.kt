@@ -583,7 +583,7 @@ fun PerformanceAndExperimentalSheet(
     var tab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Performance & Telemetry", "Compatibility & Reset", "Config Inspector", "Experimental Plugins", "Unified Collections")
 
-    ModalBottomSheet(
+    FloatingSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = c.surfaceContainerLow,

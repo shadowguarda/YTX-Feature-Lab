@@ -348,7 +348,7 @@ fun LayoutCustomizeSheet(onDismiss: () -> Unit) {
     val dock = UiUpgrades.currentDock()
     val shelves = UiUpgrades.homeShelves
     val visibleTabs = dock.count { it.visible }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+    FloatingSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Customize layout", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)

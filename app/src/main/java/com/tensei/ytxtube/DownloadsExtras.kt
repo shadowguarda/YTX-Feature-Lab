@@ -104,7 +104,7 @@ internal fun DownloadsCleanupSheet(items: List<CleanupItem>, onDelete: (Set<Stri
         )
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+    FloatingSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Free up space", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)

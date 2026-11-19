@@ -323,7 +323,7 @@ internal fun DownloadsSelectionBar(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DownloadsCustomizeSheet(onDismiss: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+    FloatingSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Customize downloads", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)

@@ -213,7 +213,7 @@ object UiUpgrades {
         islandPauseDurationMs = p.getInt("island_pause_ms", 4_000).coerceIn(1_000, 15_000)
         islandShowProgress = p.getBoolean("island_progress", true)
         islandShowControls = p.getBoolean("island_controls", true)
-        wallpaperEnabled = p.getBoolean("wallpaper", false)
+        wallpaperEnabled = p.getBoolean("wallpaper_v2", false)
         wallpaperAnimated = p.getBoolean("wallpaper_anim", true)
         dynamicArtwork = p.getBoolean("dynamic_artwork", true)
         miniSwipe = p.getBoolean("mini_swipe", true)
@@ -245,7 +245,7 @@ object UiUpgrades {
         islandShowControls = value
         putBool("island_controls", value)
     }
-    fun updateWallpaperEnabled(value: Boolean) { wallpaperEnabled = value; putBool("wallpaper", value) }
+    fun updateWallpaperEnabled(value: Boolean) { wallpaperEnabled = value; putBool("wallpaper_v2", value) }
     fun updateWallpaperAnimated(value: Boolean) { wallpaperAnimated = value; putBool("wallpaper_anim", value) }
     fun updateDynamicArtwork(value: Boolean) { dynamicArtwork = value; putBool("dynamic_artwork", value) }
     fun updateMiniSwipe(value: Boolean) { miniSwipe = value; putBool("mini_swipe", value) }

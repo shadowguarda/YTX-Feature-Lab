@@ -126,7 +126,7 @@ fun PersonalizationStudioSheet(onDismiss: () -> Unit) {
     var message by remember { mutableStateOf<String?>(null) }
     var messageError by remember { mutableStateOf(false) }
 
-    ModalBottomSheet(
+    FloatingSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         shape = studioSheetShape(),

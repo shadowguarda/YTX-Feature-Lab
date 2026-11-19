@@ -452,7 +452,7 @@ fun OfflineIntelligenceDashboardSheet(
     val tabs = listOf("Dashboard & Cleanup", "Smart Rules & Queue", "Search & Collections", "Notification Log")
     var cleanupNotice by remember { mutableStateOf<String?>(null) }
 
-    ModalBottomSheet(
+    FloatingSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = c.surfaceContainerLow,

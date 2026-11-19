@@ -710,7 +710,7 @@ fun SmartDiscoveryAndSubsSheet(
         DiscoveryAndSubsManager.syncFromLibrary(lib.channels, lib.subscriptions.videos)
     }
 
-    ModalBottomSheet(
+    FloatingSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = c.surfaceContainerLow,

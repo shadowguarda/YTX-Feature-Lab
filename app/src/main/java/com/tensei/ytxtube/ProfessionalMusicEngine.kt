@@ -575,7 +575,7 @@ fun ProfessionalMusicStudioSheet(
     var tab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Visualizer & Art", "Crossfade & Shuffle", "Custom EQ & Output", "Lyrics Sync & Sleep", "Stats & Crates")
 
-    ModalBottomSheet(
+    FloatingSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = c.surfaceContainerLow,

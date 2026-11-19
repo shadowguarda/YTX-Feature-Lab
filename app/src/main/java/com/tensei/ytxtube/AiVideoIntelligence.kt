@@ -910,7 +910,7 @@ fun AiVideoIntelligenceSheet(
         loadingCues = false
     }
 
-    ModalBottomSheet(
+    FloatingSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = c.surfaceContainerLow,

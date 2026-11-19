@@ -806,7 +806,7 @@ fun AutomationAndPrivacySheet(onDismiss: () -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Automation Rules", "Workflow Triggers", "Privacy & App Lock", "External Comms & Keys", "Local Data Export")
 
-    ModalBottomSheet(
+    FloatingSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = c.surfaceContainerLow,

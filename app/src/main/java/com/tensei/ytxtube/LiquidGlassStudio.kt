@@ -753,7 +753,7 @@ fun LiquidGlassDesignStudioSheet(onDismiss: () -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Glass Presets & Depth", "Per-Screen Blur", "Neon Glow & Borders", "Motion & Nav Style", "Theme Packages")
 
-    ModalBottomSheet(
+    FloatingSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = c.surfaceContainerLow,
