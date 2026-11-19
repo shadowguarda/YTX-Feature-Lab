@@ -213,6 +213,7 @@ fun HomeScreen(
                 indicatorTop = top,
                 videos = filteredVideos,
                 filterScrollKey = activeFilter,
+                cardStyle = UiUpgrades.homeCardStyle,
                 header = {
                     if (activeFilter == HomeFilter.All) homeShelfItems(lib, onOpen)
                 },

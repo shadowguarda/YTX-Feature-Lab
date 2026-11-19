@@ -108,6 +108,20 @@ object HomeLayoutLogic {
         recent.filter { s -> progress(s.videoId)?.let { it in 0.02f..0.95f } == true }.take(max)
 }
 
+/** How videos are drawn in the home feed. */
+enum class FeedCardStyle(val label: String, val columns: Int) {
+    Comfortable("Cards", 1),
+    Compact("List", 1),
+    Grid("Grid", 2),
+}
+
+object FeedCardLogic {
+    fun parse(name: String?): FeedCardStyle = FeedCardStyle.entries.find { it.name == name } ?: FeedCardStyle.Comfortable
+
+    /** Splits [items] into rows of [columns]; the last row may be shorter. */
+    fun <T> rows(items: List<T>, columns: Int): List<List<T>> = items.chunked(columns.coerceAtLeast(1))
+}
+
 object IslandLogic {
     fun fraction(positionMs: Long, durationMs: Long): Float =
         if (durationMs <= 0L) 0f else (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
@@ -183,6 +197,8 @@ object UiUpgrades {
         private set
     var homeShelves by mutableStateOf(OrderedLayoutLogic.defaults(HomeLayoutLogic.ALL))
         private set
+    var homeCardStyle by mutableStateOf(FeedCardStyle.Comfortable)
+        private set
 
     /** Not saved: whether the Quick Settings panel and the layout sheet are open right now. */
     var quickPanelOpen by mutableStateOf(false)
@@ -204,6 +220,7 @@ object UiUpgrades {
         dockLabelMode = NavDockLogic.parseLabelMode(p.getString("dock_labels", null))
         dock = OrderedLayoutLogic.deserialize(p.getString("dock", null), tabNames(), NavDockLogic.MIN_VISIBLE_TABS, NavDockLogic.LOCKED_TAB)
         homeShelves = OrderedLayoutLogic.deserialize(p.getString("home_shelves", null), HomeLayoutLogic.ALL)
+        homeCardStyle = FeedCardLogic.parse(p.getString("home_card_style", null))
     }
 
     /** The dock as it should be drawn now, even before [init] ran. */
@@ -232,6 +249,11 @@ object UiUpgrades {
     fun updateWallpaperAnimated(value: Boolean) { wallpaperAnimated = value; putBool("wallpaper_anim", value) }
     fun updateDynamicArtwork(value: Boolean) { dynamicArtwork = value; putBool("dynamic_artwork", value) }
     fun updateMiniSwipe(value: Boolean) { miniSwipe = value; putBool("mini_swipe", value) }
+
+    fun updateHomeCardStyle(value: FeedCardStyle) {
+        homeCardStyle = value
+        prefs?.edit()?.putString("home_card_style", value.name)?.apply()
+    }
 
     fun updateDockLabelMode(value: DockLabelMode) {
         dockLabelMode = value
@@ -262,5 +284,6 @@ object UiUpgrades {
         saveDock(OrderedLayoutLogic.defaults(tabNames()))
         saveShelves(OrderedLayoutLogic.defaults(HomeLayoutLogic.ALL))
         updateDockLabelMode(DockLabelMode.Always)
+        updateHomeCardStyle(FeedCardStyle.Comfortable)
     }
 }

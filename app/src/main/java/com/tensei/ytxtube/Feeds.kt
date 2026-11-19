@@ -220,6 +220,8 @@ fun FeedList(
     filterScrollKey: Any? = null,
 
     channelAvatarSeed: Map<String, String?> = emptyMap(),
+
+    cardStyle: FeedCardStyle = FeedCardStyle.Comfortable,
 ) {
     val c = MaterialTheme.colorScheme
     val listVideos = videos ?: feed.videos
@@ -240,12 +242,29 @@ fun FeedList(
     PullToRefresh(enabled = pullToRefresh, refreshing = feed.refreshing, onRefresh = feed::refresh, topPadding = indicatorTop) {
     LazyColumn(state = list, contentPadding = contentPadding) {
         header()
-        items(listVideos, key = { it.id }) { video ->
-            VideoCard(
-                video,
-                onClick = { onOpen(video) },
-                modifier = Modifier.animateItem(),
-            )
+        when (cardStyle) {
+            FeedCardStyle.Comfortable -> items(listVideos, key = { it.id }) { video ->
+                VideoCard(
+                    video,
+                    onClick = { onOpen(video) },
+                    modifier = Modifier.animateItem(),
+                )
+            }
+            FeedCardStyle.Compact -> items(listVideos, key = { it.id }) { video ->
+                Box(Modifier.animateItem().padding(horizontal = 12.dp)) { VideoRow(video, onClick = { onOpen(video) }) }
+            }
+            FeedCardStyle.Grid -> {
+                val rows = FeedCardLogic.rows(listVideos, cardStyle.columns)
+                items(rows, key = { row -> row.first().id }) { row ->
+                    Row(
+                        Modifier.animateItem().fillMaxWidth().padding(horizontal = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        row.forEach { video -> VideoGridCard(video, onClick = { onOpen(video) }, modifier = Modifier.weight(1f)) }
+                        repeat(cardStyle.columns - row.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+            }
         }
         when {
 

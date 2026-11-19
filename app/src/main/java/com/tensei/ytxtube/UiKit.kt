@@ -414,6 +414,34 @@ fun VideoCard(video: VideoItem, onClick: () -> Unit, modifier: Modifier = Modifi
 }
 
 
+/** A compact card for two-column grids: thumbnail, two title lines and one meta line. */
+@Composable
+fun VideoGridCard(video: VideoItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val c = MaterialTheme.colorScheme
+    val menu = LocalVideoMenu.current
+    Column(
+        modifier = modifier
+            .prefetchOnPress(video.id)
+            .pressable(pressedScale = 0.97f, onLongClick = { menu(video) }, onClick = onClick)
+            .padding(bottom = 14.dp),
+    ) {
+        Box(Modifier.fillMaxWidth()) {
+            Thumbnail(video.thumbnail, Modifier.fillMaxWidth().aspectRatio(16f / 9f), radius = 12, videoId = video.id)
+            DurationPill(video.durationSec, Modifier.align(Alignment.BottomEnd).padding(6.dp), small = true, isLive = video.isLive)
+            ResumeBar(video.id, Modifier.align(Alignment.BottomStart))
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            rememberDeArrowTitle(video.id, video.title),
+            fontWeight = FontWeight.SemiBold, fontSize = 13.sp, lineHeight = 17.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            metaLine(video.channel, video.views, video.uploaded, video.isLive),
+            color = c.onSurfaceVariant, fontSize = 11.5.sp, lineHeight = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
 @Composable
 fun VideoRow(video: VideoItem, onClick: () -> Unit, trailing: (@Composable () -> Unit)? = null) {
     val c = MaterialTheme.colorScheme

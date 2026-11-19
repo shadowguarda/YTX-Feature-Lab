@@ -381,6 +381,13 @@ fun LayoutCustomizeSheet(onDismiss: () -> Unit) {
             var islandSheet by remember { mutableStateOf(false) }
             TextButton(onClick = { islandSheet = true }) { Text("Open Dynamic Island settings") }
             if (islandSheet) IslandSettingsSheet(onDismiss = { islandSheet = false })
+            YtxSectionLabel("Home video cards")
+            YtxNote("How videos look in the home feed.")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FeedCardStyle.entries.forEach { st ->
+                    YtxChip(label = st.label, selected = UiUpgrades.homeCardStyle == st) { UiUpgrades.updateHomeCardStyle(st) }
+                }
+            }
             YtxSectionLabel("Home shelves")
             YtxNote("Rows shown above your home feed. A shelf with nothing to show stays out of the way.")
             shelves.forEachIndexed { i, item ->
