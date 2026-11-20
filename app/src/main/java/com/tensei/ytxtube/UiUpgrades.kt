@@ -122,6 +122,48 @@ object FeedCardLogic {
     fun <T> rows(items: List<T>, columns: Int): List<List<T>> = items.chunked(columns.coerceAtLeast(1))
 }
 
+/** One-tap home looks: card style, which shelves show and in what order, and the dock labels. */
+enum class HomePreset(val label: String, val blurb: String) {
+    Classic("Classic", "Large cards, every shelf, labelled dock"),
+    Focus("Focus", "Compact list, only Continue watching"),
+    Browse("Browse", "Two-column grid, subscriptions first"),
+    Minimal("Minimal", "Large cards, no shelves, icon-only dock"),
+}
+
+object HomePresetLogic {
+    fun cardStyle(p: HomePreset): FeedCardStyle = when (p) {
+        HomePreset.Classic, HomePreset.Minimal -> FeedCardStyle.Comfortable
+        HomePreset.Focus -> FeedCardStyle.Compact
+        HomePreset.Browse -> FeedCardStyle.Grid
+    }
+
+    fun labelMode(p: HomePreset): DockLabelMode = when (p) {
+        HomePreset.Classic -> DockLabelMode.Always
+        HomePreset.Focus, HomePreset.Browse -> DockLabelMode.SelectedOnly
+        HomePreset.Minimal -> DockLabelMode.Never
+    }
+
+    /** Every shelf appears exactly once, so the list always matches [HomeLayoutLogic.ALL]. */
+    fun shelves(p: HomePreset): List<LayoutItem> {
+        val order = when (p) {
+            HomePreset.Classic, HomePreset.Minimal -> HomeLayoutLogic.ALL
+            HomePreset.Focus -> listOf(HomeLayoutLogic.CONTINUE, HomeLayoutLogic.SUBSCRIPTIONS, HomeLayoutLogic.PLANNED)
+            HomePreset.Browse -> listOf(HomeLayoutLogic.SUBSCRIPTIONS, HomeLayoutLogic.CONTINUE, HomeLayoutLogic.PLANNED)
+        }
+        val visible = when (p) {
+            HomePreset.Classic -> HomeLayoutLogic.ALL.toSet()
+            HomePreset.Focus -> setOf(HomeLayoutLogic.CONTINUE)
+            HomePreset.Browse -> setOf(HomeLayoutLogic.SUBSCRIPTIONS, HomeLayoutLogic.CONTINUE)
+            HomePreset.Minimal -> emptySet()
+        }
+        return order.map { LayoutItem(it, it in visible) }
+    }
+
+    /** The preset whose settings exactly match the current ones, if any. */
+    fun matching(style: FeedCardStyle, mode: DockLabelMode, shelves: List<LayoutItem>): HomePreset? =
+        HomePreset.entries.firstOrNull { cardStyle(it) == style && labelMode(it) == mode && shelves(it) == shelves }
+}
+
 object IslandLogic {
     fun fraction(positionMs: Long, durationMs: Long): Float =
         if (durationMs <= 0L) 0f else (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
@@ -253,6 +295,12 @@ object UiUpgrades {
     fun updateHomeCardStyle(value: FeedCardStyle) {
         homeCardStyle = value
         prefs?.edit()?.putString("home_card_style", value.name)?.apply()
+    }
+
+    fun applyHomePreset(p: HomePreset) {
+        updateHomeCardStyle(HomePresetLogic.cardStyle(p))
+        updateDockLabelMode(HomePresetLogic.labelMode(p))
+        saveShelves(HomePresetLogic.shelves(p))
     }
 
     fun updateDockLabelMode(value: DockLabelMode) {

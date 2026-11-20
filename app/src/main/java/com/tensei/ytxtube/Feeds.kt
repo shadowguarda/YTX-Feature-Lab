@@ -277,6 +277,7 @@ fun FeedList(
                     action = { PillButton("Try again", { feed.refresh() }) },
                 )
             }
+            feed.loading && listVideos.isEmpty() -> items(4) { VideoCardSkeleton(cardStyle) }
             feed.loading || feed.hasMore -> item {
                 Box(Modifier.fillMaxWidth().padding(28.dp), Alignment.Center) {
                     YtxSpinner(color = c.primary, size = 32.dp)

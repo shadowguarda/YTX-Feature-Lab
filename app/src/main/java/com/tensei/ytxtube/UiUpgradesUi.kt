@@ -381,6 +381,14 @@ fun LayoutCustomizeSheet(onDismiss: () -> Unit) {
             var islandSheet by remember { mutableStateOf(false) }
             TextButton(onClick = { islandSheet = true }) { Text("Open Dynamic Island settings") }
             if (islandSheet) IslandSettingsSheet(onDismiss = { islandSheet = false })
+            YtxSectionLabel("Home presets")
+            val activePreset = HomePresetLogic.matching(UiUpgrades.homeCardStyle, UiUpgrades.dockLabelMode, UiUpgrades.homeShelves)
+            YtxNote(activePreset?.blurb ?: "Custom layout. Pick a preset to replace card style, shelves and dock labels in one go.")
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                HomePreset.entries.forEach { pr ->
+                    YtxChip(label = pr.label, selected = activePreset == pr) { UiUpgrades.applyHomePreset(pr) }
+                }
+            }
             YtxSectionLabel("Home video cards")
             YtxNote("How videos look in the home feed.")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
