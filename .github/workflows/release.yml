@@ -118,11 +118,8 @@ jobs:
           SHA-256:
           $(cat "$APK.sha256")"
 
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            FLAGS=(--latest)
-          else
-            FLAGS=(--prerelease)
-          fi
+          # Every release this workflow publishes is a normal release and becomes the Latest one.
+          FLAGS=(--latest)
 
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" "$APK.sha256" --clobber
