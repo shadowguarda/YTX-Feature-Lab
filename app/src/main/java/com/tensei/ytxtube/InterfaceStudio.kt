@@ -68,7 +68,7 @@ fun InterfaceStudioSheet(onDismiss: () -> Unit) {
     FloatingSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().weight(1f, fill = false)) {
             Text("Interface Studio", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
-            StudioPreview(Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            StudioPreview(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) { tab = it }
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -98,7 +98,7 @@ fun InterfaceStudioSheet(onDismiss: () -> Unit) {
 
 /** A small stand-in screen drawn from the real settings: header, a feed card in the chosen style and the nav bar. */
 @Composable
-private fun StudioPreview(modifier: Modifier = Modifier) {
+private fun StudioPreview(modifier: Modifier = Modifier, onSelectTab: (StudioTab) -> Unit) {
     val c = MaterialTheme.colorScheme
     val glow = studioGlowColor()
     val glow2 = studioGlowColor(secondary = true)
@@ -111,33 +111,35 @@ private fun StudioPreview(modifier: Modifier = Modifier) {
             .clip(frame)
             .background(c.surfaceContainerLow)
             .studioNeonBorder(frame)
+            .clickable { onSelectTab(StudioTab.Glass) }
             .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("YTXTube", fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.weight(1f))
-            repeat(2) { Box(Modifier.size(18.dp).clip(CircleShape).background(c.surfaceContainerHighest)) }
+            Text("YTXTube", fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.weight(1f).clickable { onSelectTab(StudioTab.Components) })
+            Box(Modifier.size(18.dp).clip(CircleShape).background(c.surfaceContainerHighest).clickable { onSelectTab(StudioTab.Player) })
+            Box(Modifier.size(18.dp).clip(CircleShape).background(c.surfaceContainerHighest).clickable { onSelectTab(StudioTab.Animation) })
         }
         when (UiUpgrades.homeCardStyle) {
-            FeedCardStyle.Comfortable -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FeedCardStyle.Comfortable -> Column(Modifier.fillMaxWidth().clickable { onSelectTab(StudioTab.Home) }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Box(Modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(10.dp)).background(Brush.horizontalGradient(listOf(glow.copy(alpha = 0.55f), glow2.copy(alpha = 0.55f)))))
                 Box(Modifier.fillMaxWidth(0.7f).height(7.dp).clip(RoundedCornerShape(4.dp)).background(c.surfaceContainerHighest))
             }
-            FeedCardStyle.Compact -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FeedCardStyle.Compact -> Row(Modifier.fillMaxWidth().clickable { onSelectTab(StudioTab.Home) }, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.width(78.dp).height(44.dp).clip(RoundedCornerShape(10.dp)).background(Brush.horizontalGradient(listOf(glow.copy(alpha = 0.55f), glow2.copy(alpha = 0.55f)))))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Box(Modifier.fillMaxWidth(0.9f).height(7.dp).clip(RoundedCornerShape(4.dp)).background(c.surfaceContainerHighest))
                     Box(Modifier.fillMaxWidth(0.5f).height(7.dp).clip(RoundedCornerShape(4.dp)).background(c.surfaceContainerHighest))
                 }
             }
-            FeedCardStyle.Grid -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FeedCardStyle.Grid -> Row(Modifier.fillMaxWidth().clickable { onSelectTab(StudioTab.Home) }, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 repeat(2) { Box(Modifier.weight(1f).height(46.dp).clip(RoundedCornerShape(10.dp)).background(Brush.horizontalGradient(listOf(glow.copy(alpha = 0.55f), glow2.copy(alpha = 0.55f))))) }
             }
         }
         // Nav bar: tap an icon to see the indicator style move.
         val indicator = LiquidGlassStudio.navIndicatorStyle
         Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.surfaceContainerHigh).padding(vertical = 4.dp),
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.surfaceContainerHigh).clickable { onSelectTab(StudioTab.Navigation) }.padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             repeat(4) { i ->
