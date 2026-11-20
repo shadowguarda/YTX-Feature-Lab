@@ -318,6 +318,7 @@ private fun QuickTileView(tile: QuickTile, modifier: Modifier = Modifier) {
  * Long-press a row and drag vertically to move it by one or more positions.
  * The explicit Up/Down buttons remain available as an accessible alternative.
  */
+@Composable
 fun Modifier.reorderOnLongPress(onMove: (Int) -> Unit): Modifier {
     val thresholdPx = with(LocalDensity.current) { 44.dp.toPx() }
     return pointerInput(onMove, thresholdPx) {
