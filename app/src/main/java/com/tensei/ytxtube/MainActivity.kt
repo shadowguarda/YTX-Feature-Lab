@@ -1002,6 +1002,7 @@ fun YtxTubeApp() {
         )
         QuickSettingsPanel(onOpenSettings = { openSettings = true })
         if (UiUpgrades.layoutSheetOpen) LayoutCustomizeSheet(onDismiss = { UiUpgrades.layoutSheetOpen = false })
+        if (PlayerEngine.switcherOpen) PlayerSwitcherSheet(onDismiss = { PlayerEngine.switcherOpen = false })
 
         UpdateOverlay(updateState, pageBackdrop)
         }

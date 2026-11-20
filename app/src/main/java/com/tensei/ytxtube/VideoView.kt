@@ -590,6 +590,38 @@ fun VideoContent(
             }
         }
         val chromeAlpha = if (scrubbing) 0f else visibleAlpha * controlsAlpha()
+        if (PlayerEngine.mode == PlayerEngineMode.Style) {
+            val qualityText = QualityPreference.height?.let { "${it}p" } ?: "Auto"
+            Box(Modifier.fillMaxSize().graphicsLayer { alpha = controlsAlpha() }) {
+                CuteModernVideoPlayerOverlay(
+                    title = state.current?.title.orEmpty(),
+                    channelName = state.current?.channel.orEmpty(),
+                    isPlaying = state.isPlaying,
+                    isFullscreen = fullscreen,
+                    isLiked = state.currentLike == LikeStatus.Like,
+                    isLooping = state.loopEnabled,
+                    positionMs = state.scrubPreviewMs ?: state.positionMs,
+                    durationMs = state.durationMs,
+                    bufferedMs = state.bufferedMs,
+                    speed = state.speed,
+                    qualityLabel = qualityText,
+                    backdrop = videoBackdrop,
+                    onCollapse = { touched(); if (fullscreen) onToggleFullscreen() else onCollapse() },
+                    onTogglePlayPause = { touched(); state.togglePlay() },
+                    onSeekTo = { touched(); state.seekTo(it) },
+                    onPrevious = { touched(); state.skipPrevious() },
+                    onNext = { touched(); state.skipNext() },
+                    onToggleFullscreen = { touched(); onToggleFullscreen() },
+                    onToggleLike = { touched(); state.toggleLike() },
+                    onToggleLoop = { touched(); state.toggleLoop() },
+                    onOpenSpeed = { touched(); state.sheet = PlayerSheet.Speed },
+                    onOpenQuality = { touched(); state.sheet = PlayerSheet.Quality },
+                    onToggleCaptions = { touched(); state.sheet = PlayerSheet.Subtitles },
+                    onOpenCustomizer = { touched(); PlayerEngine.switcherOpen = true },
+                    externalControlsVisible = controlsVisible && interactive,
+                )
+            }
+        } else {
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = chromeAlpha }) {
             Box(
                 Modifier.fillMaxSize().background(
@@ -749,6 +781,8 @@ fun VideoContent(
             }
         }
 
+        }
+
         val captionText = state.captionText
         if (!scrubbing && captionText != null) {
             val captionLift by animateDpAsState(
@@ -765,7 +799,7 @@ fun VideoContent(
             )
         }
 
-        if (state.error == null && (!fullscreenControlsScrub || controlsVisible || scrubbing)) {
+        if (PlayerEngine.mode == PlayerEngineMode.Classic && state.error == null && (!fullscreenControlsScrub || controlsVisible || scrubbing)) {
             val scrubActive = controlsVisible && interactive
             val morphFade = controlsAlpha()
             val scrubFade = if (scrubbing) 1f else morphFade
@@ -1281,6 +1315,16 @@ fun PlayerSettingsSheet(state: PlayerState, backdrop: Backdrop, onDismiss: () ->
                     onClick = {
                         onDismiss()
                         state.sheet = PlayerSheet.Audio
+                    }
+                )
+
+                PlayerSettingItem(
+                    icon = Icons.Rounded.Settings,
+                    title = "Video player",
+                    value = PlayerEngine.mode.title,
+                    onClick = {
+                        onDismiss()
+                        PlayerEngine.switcherOpen = true
                     }
                 )
 

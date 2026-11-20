@@ -848,6 +848,12 @@ private fun AppearanceThemeContent(context: Context) {
         )
         SettingsRow(
             icon = Icons.Rounded.Tune,
+            title = "Video player",
+            subtitle = PlayerEngineLogic.summary(PlayerEngine.mode, CutePlayerPreferences.style) + " \u00b7 switch, pick a look and customise",
+            onClick = { PlayerEngine.switcherOpen = true },
+        )
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
             title = "Personalization Studio",
             subtitle = "Accent HEX, glow colours, sheet corners and transparency, animation speed, nav indicator, JSON import and export",
             onClick = { showPersonalization = true },
