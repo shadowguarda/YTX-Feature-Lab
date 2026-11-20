@@ -161,7 +161,7 @@ private fun StudioPreview(modifier: Modifier = Modifier, onSelectTab: (StudioTab
                                 drawCircle(glow, 3.dp.toPx(), Offset(size.width / 2f, size.height - 4.dp.toPx()))
                             }
                         }
-                        .clickable { navIndex = i },
+                        .clickable { navIndex = i; onSelectTab(StudioTab.Navigation) },
                     contentAlignment = Alignment.Center,
                 ) {
                     Box(Modifier.size(if (big) 18.dp else 13.dp).clip(CircleShape).background(if (selected) c.onSurface else c.onSurfaceVariant.copy(alpha = 0.6f)))
