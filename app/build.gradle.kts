@@ -18,8 +18,8 @@ android {
         targetSdk = 36
         // Bump versionCode by exactly 1 per release and the last number of versionName by 1
         // (2.9.0 -> 2.9.1 -> 2.9.2), not by 10.
-        versionCode = 296
-        versionName = "2.10.1"
+        versionCode = 297
+        versionName = "2.11.0"
     }
 
     signingConfigs {
