@@ -19,10 +19,12 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -328,7 +330,9 @@ object CutePlayerPreferences {
 }
 
 /**
- * Cute, Modern & Customizable Video Player Stage Overlay supporting 10 distinct player types.
+ * YTX Style player controls: one clean layout whose colours, button shape and glass follow the chosen
+ * look. Top bar (back, title, captions, looks), centre transport, then a scrollable chip row and a
+ * single seek row (time, seekbar, duration, fullscreen). Chips hide on very short players.
  */
 @Composable
 fun CuteModernVideoPlayerOverlay(
@@ -363,7 +367,6 @@ fun CuteModernVideoPlayerOverlay(
     val style = CutePlayerPreferences.style
     val primaryColor = YtxNeonPalette.parseHex(style.primaryHex, YtxNeonPalette.VioletCore)
     val secondaryColor = YtxNeonPalette.parseHex(style.secondaryHex, YtxNeonPalette.ElectricBlue)
-    val accentGradient = Brush.linearGradient(listOf(primaryColor, secondaryColor))
 
     var internalVisible by remember { mutableStateOf(true) }
     val controlsVisible = externalControlsVisible ?: internalVisible
@@ -378,7 +381,6 @@ fun CuteModernVideoPlayerOverlay(
             internalVisible = false
         }
     }
-
     LaunchedEffect(doubleTapSide) {
         if (doubleTapSide != null) {
             delay(650L)
@@ -389,12 +391,12 @@ fun CuteModernVideoPlayerOverlay(
     val buttonShape: Shape = when {
         style == PlayerStylePreset.CyberpunkHud -> CutCornerShape(10.dp)
         CutePlayerPreferences.buttonShape == PlayerButtonShape.Circle -> CircleShape
-        CutePlayerPreferences.buttonShape == PlayerButtonShape.Squircle -> RoundedCornerShape(16.dp)
+        CutePlayerPreferences.buttonShape == PlayerButtonShape.Squircle -> RoundedCornerShape(14.dp)
         CutePlayerPreferences.buttonShape == PlayerButtonShape.Chamfered -> CutCornerShape(10.dp)
-        else -> RoundedCornerShape(24.dp)
+        else -> RoundedCornerShape(22.dp)
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .pointerInput(durationMs, positionMs, isLocked, externalControlsVisible == null) {
@@ -416,7 +418,10 @@ fun CuteModernVideoPlayerOverlay(
                 )
             },
     ) {
-        // Double-tap seek feedback pill
+        // Tall enough for the chip row? Short portrait players drop it so nothing overlaps.
+        val roomForChips = maxHeight >= 230.dp
+        val compact = maxHeight < 230.dp
+
         AnimatedVisibility(
             visible = doubleTapSide != null,
             enter = fadeIn() + scaleIn(initialScale = 0.85f),
@@ -430,272 +435,128 @@ fun CuteModernVideoPlayerOverlay(
                 modifier = Modifier
                     .clip(RoundedCornerShape(24.dp))
                     .background(Color.Black.copy(alpha = 0.62f))
-                    .border(1.dp, primaryColor.copy(alpha = 0.70f), RoundedCornerShape(24.dp))
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Icon(
-                    imageVector = if (isBack) Icons.Rounded.FastRewind else Icons.Rounded.FastForward,
-                    contentDescription = null,
-                    tint = primaryColor,
-                    modifier = Modifier.size(20.dp),
-                )
-                Text(
-                    text = "${if (isBack) "-" else "+"}${CutePlayerPreferences.doubleTapSeekSeconds}s",
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                )
+                Icon(if (isBack) Icons.Rounded.FastRewind else Icons.Rounded.FastForward, null, tint = primaryColor, modifier = Modifier.size(18.dp))
+                Text("${if (isBack) "-" else "+"}${CutePlayerPreferences.doubleTapSeekSeconds}s", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
         }
 
-        // Locked state unlock pill
         AnimatedVisibility(
             visible = isLocked && controlsVisible,
             enter = fadeIn() + scaleIn(),
             exit = fadeOut() + scaleOut(),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 22.dp),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 22.dp),
         ) {
-            CutePlayerPillButton(
-                icon = Icons.Rounded.LockOpen,
-                label = "Unlock Player",
-                shape = buttonShape,
-                accent = primaryColor,
-                backdrop = backdrop,
-                onClick = { isLocked = false },
-            )
+            CutePlayerPillButton(Icons.Rounded.LockOpen, "Unlock", buttonShape, primaryColor, backdrop) { isLocked = false }
         }
 
-        // Main HUD Controls
         AnimatedVisibility(
             visible = controlsVisible && !isLocked,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(220)),
+            enter = fadeIn(tween(180)),
+            exit = fadeOut(tween(200)),
             modifier = Modifier.fillMaxSize(),
         ) {
-            val scrimAlphaTop = if (style == PlayerStylePreset.OledPure) 0.72f else 0.52f
-            val scrimAlphaBot = if (style == PlayerStylePreset.OledPure) 0.82f else 0.62f
-
+            val top = if (style == PlayerStylePreset.OledPure) 0.7f else 0.5f
+            val bottom = if (style == PlayerStylePreset.OledPure) 0.8f else 0.6f
             Box(
-                modifier = Modifier
+                Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.Black.copy(alpha = scrimAlphaTop),
-                                Color.Black.copy(alpha = 0.14f),
-                                Color.Black.copy(alpha = scrimAlphaBot),
-                            ),
-                        ),
-                    )
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                    .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = top), Color.Black.copy(alpha = 0.1f), Color.Black.copy(alpha = bottom))))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
-                // Top Bar (framed as Dynamic Island Pill when DynamicIslandPill is active)
-                val topRowMod = if (style == PlayerStylePreset.DynamicIslandPill) {
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(Color.Black.copy(alpha = 0.72f))
-                        .border(1.dp, primaryColor.copy(alpha = 0.45f), RoundedCornerShape(28.dp))
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                } else {
-                    Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                }
-
+                // Top: back, title, captions, looks.
                 Row(
-                    modifier = topRowMod,
+                    Modifier.fillMaxWidth().align(Alignment.TopCenter),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    CuteIconTile(
-                        icon = Icons.Rounded.KeyboardArrowDown,
-                        contentDescription = "Minimize player",
-                        shape = buttonShape,
-                        accent = primaryColor,
-                        onClick = onCollapse,
-                    )
-
-                    Column(
-                        modifier = if (style == PlayerStylePreset.DynamicIslandPill) {
-                            Modifier.weight(1f, fill = false)
-                        } else {
-                            Modifier.weight(1f)
-                        },
-                    ) {
-                        Text(
-                            text = title,
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (channelName.isNotBlank() &&
-                            style != PlayerStylePreset.MinimalCinema &&
-                            style != PlayerStylePreset.DynamicIslandPill
-                        ) {
-                            Text(
-                                text = channelName,
-                                color = Color.White.copy(alpha = 0.72f),
-                                fontSize = 11.5.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                    CuteIconTile(Icons.Rounded.KeyboardArrowDown, "Minimize player", buttonShape, primaryColor, onCollapse, size = 34.dp)
+                    Column(Modifier.weight(1f)) {
+                        Text(title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (channelName.isNotBlank() && !compact) {
+                            Text(channelName, color = Color.White.copy(alpha = 0.72f), fontSize = 11.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
-
-                    CutePlayerPillButton(
-                        icon = Icons.Rounded.Palette,
-                        label = style.title,
-                        shape = buttonShape,
-                        accent = primaryColor,
-                        backdrop = backdrop,
-                        onClick = onOpenCustomizer,
-                    )
-
                     if (CutePlayerPreferences.showCaptionsButton) {
-                        CuteIconTile(
-                            icon = Icons.Rounded.ClosedCaption,
-                            contentDescription = "Captions",
-                            shape = buttonShape,
-                            accent = primaryColor,
-                            onClick = onToggleCaptions,
-                        )
+                        CuteIconTile(Icons.Rounded.ClosedCaption, "Captions", buttonShape, primaryColor, onToggleCaptions, size = 34.dp)
                     }
-
-                    CuteIconTile(
-                        icon = Icons.Rounded.Lock,
-                        contentDescription = "Lock controls",
-                        shape = buttonShape,
-                        accent = primaryColor,
-                        onClick = { isLocked = true },
-                    )
+                    CuteIconTile(Icons.Rounded.Palette, "Player and looks", buttonShape, primaryColor, onOpenCustomizer, size = 34.dp)
                 }
 
-                // Center Transport Controls (distinct per PlayerStylePreset)
-                CenterTransportHud(
-                    style = style,
-                    isPlaying = isPlaying,
-                    buttonShape = buttonShape,
-                    primaryColor = primaryColor,
-                    secondaryColor = secondaryColor,
-                    accentGradient = accentGradient,
-                    backdrop = backdrop,
-                    onPrevious = onPrevious,
-                    onTogglePlayPause = onTogglePlayPause,
-                    onNext = onNext,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-
-                // Bottom Seekbar + Action Row
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                // Centre transport: previous, play/pause, next.
+                Row(
+                    Modifier.align(Alignment.Center),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(if (compact) 20.dp else 28.dp),
                 ) {
-                    CuteAdaptiveSeekbar(
-                        seekbarStyle = CutePlayerPreferences.seekbarStyle,
-                        positionMs = positionMs,
-                        durationMs = durationMs,
-                        bufferedMs = bufferedMs,
-                        isPlaying = isPlaying,
-                        primaryColor = primaryColor,
-                        secondaryColor = secondaryColor,
-                        onSeekTo = onSeekTo,
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                    CuteIconTile(Icons.Rounded.SkipPrevious, "Previous", CircleShape, primaryColor, onPrevious, size = if (compact) 38.dp else 44.dp)
+                    val playSize = if (compact) 52.dp else 64.dp
+                    Box(
+                        Modifier
+                            .size(playSize)
+                            .clip(CircleShape)
+                            .background(Brush.linearGradient(listOf(primaryColor, secondaryColor)))
+                            .liquidPressable(pressedScale = if (CutePlayerPreferences.bouncyAnimations) 0.9f else 0.96f, haptic = true, onClick = onTogglePlayPause),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(if (style == PlayerStylePreset.CyberpunkHud) CutCornerShape(8.dp) else RoundedCornerShape(12.dp))
-                                .background(Color.Black.copy(alpha = 0.42f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp),
-                        ) {
-                            Text(
-                                text = "${formatCuteTime(positionMs)} / ${formatCuteTime(durationMs)}",
-                                color = if (style == PlayerStylePreset.CyberpunkHud) primaryColor else Color.White,
-                                fontFamily = if (style == PlayerStylePreset.CyberpunkHud || style == PlayerStylePreset.Y2KPop) {
-                                    FontFamily.Monospace
-                                } else {
-                                    FontFamily.Default
-                                },
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
+                        Icon(
+                            if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                            contentDescription = if (isPlaying) "Pause" else "Play",
+                            tint = Color.White,
+                            modifier = Modifier.size(playSize * 0.55f),
+                        )
+                    }
+                    CuteIconTile(Icons.Rounded.SkipNext, "Next", CircleShape, primaryColor, onNext, size = if (compact) 38.dp else 44.dp)
+                }
 
+                // Bottom: chip row (scrolls sideways, never wraps), then one seek row.
+                Column(Modifier.fillMaxWidth().align(Alignment.BottomCenter), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (roomForChips) {
                         Row(
+                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            if (CutePlayerPreferences.showLikeButton) {
-                                val heartScale by animateFloatAsState(
-                                    targetValue = if (isLiked && CutePlayerPreferences.bouncyAnimations) 1.18f else 1f,
-                                    animationSpec = YtxMotion.bouncySpring(),
-                                    label = "heartBounce",
-                                )
-                                CuteIconTile(
-                                    icon = if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                                    contentDescription = "Like video",
-                                    shape = buttonShape,
-                                    accent = if (isLiked) Color(0xFFF472B6) else primaryColor,
-                                    highlighted = isLiked,
-                                    modifier = Modifier.scale(heartScale),
-                                    onClick = onToggleLike,
-                                )
-                            }
-
-                            if (CutePlayerPreferences.showLoopButton) {
-                                CuteIconTile(
-                                    icon = Icons.Rounded.Repeat,
-                                    contentDescription = "Loop",
-                                    shape = buttonShape,
-                                    accent = primaryColor,
-                                    highlighted = isLooping,
-                                    onClick = onToggleLoop,
-                                )
-                            }
-
                             if (CutePlayerPreferences.showSpeedChip) {
-                                CutePlayerPillButton(
-                                    icon = Icons.Rounded.Speed,
-                                    label = "${speed}x",
-                                    shape = buttonShape,
-                                    accent = primaryColor,
-                                    backdrop = backdrop,
-                                    onClick = onOpenSpeed,
-                                )
+                                CutePlayerPillButton(Icons.Rounded.Speed, "${speed}x", buttonShape, primaryColor, backdrop, onOpenSpeed)
                             }
-
                             if (CutePlayerPreferences.showQualityChip) {
-                                CutePlayerPillButton(
-                                    icon = Icons.Rounded.HighQuality,
-                                    label = qualityLabel,
-                                    shape = buttonShape,
-                                    accent = secondaryColor,
-                                    backdrop = backdrop,
-                                    onClick = onOpenQuality,
+                                CutePlayerPillButton(Icons.Rounded.HighQuality, qualityLabel, buttonShape, secondaryColor, backdrop, onOpenQuality)
+                            }
+                            if (CutePlayerPreferences.showLoopButton) {
+                                CuteIconTile(Icons.Rounded.Repeat, "Loop", buttonShape, primaryColor, onToggleLoop, size = 32.dp, highlighted = isLooping)
+                            }
+                            if (CutePlayerPreferences.showLikeButton) {
+                                CuteIconTile(
+                                    if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, "Like video", buttonShape,
+                                    if (isLiked) Color(0xFFF472B6) else primaryColor, onToggleLike, size = 32.dp, highlighted = isLiked,
                                 )
                             }
-
-                            CuteIconTile(
-                                icon = if (isFullscreen) Icons.Rounded.FullscreenExit else Icons.Rounded.Fullscreen,
-                                contentDescription = if (isFullscreen) "Exit fullscreen" else "Fullscreen",
-                                shape = buttonShape,
-                                accent = primaryColor,
-                                onClick = onToggleFullscreen,
-                            )
+                            CuteIconTile(Icons.Rounded.Lock, "Lock controls", buttonShape, primaryColor, { isLocked = true }, size = 32.dp)
                         }
+                    }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(formatCuteTime(positionMs), color = Color.White, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold)
+                        CuteAdaptiveSeekbar(
+                            seekbarStyle = CutePlayerPreferences.seekbarStyle,
+                            positionMs = positionMs,
+                            durationMs = durationMs,
+                            bufferedMs = bufferedMs,
+                            isPlaying = isPlaying,
+                            primaryColor = primaryColor,
+                            secondaryColor = secondaryColor,
+                            onSeekTo = onSeekTo,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(formatCuteTime(durationMs), color = Color.White.copy(alpha = 0.78f), fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold)
+                        CuteIconTile(
+                            if (isFullscreen) Icons.Rounded.FullscreenExit else Icons.Rounded.Fullscreen,
+                            if (isFullscreen) "Exit fullscreen" else "Fullscreen",
+                            buttonShape, primaryColor, onToggleFullscreen, size = 32.dp,
+                        )
                     }
                 }
             }
@@ -703,134 +564,6 @@ fun CuteModernVideoPlayerOverlay(
     }
 }
 
-@Composable
-private fun CenterTransportHud(
-    style: PlayerStylePreset,
-    isPlaying: Boolean,
-    buttonShape: Shape,
-    primaryColor: Color,
-    secondaryColor: Color,
-    accentGradient: Brush,
-    backdrop: Backdrop?,
-    onPrevious: () -> Unit,
-    onTogglePlayPause: () -> Unit,
-    onNext: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val capsuleModifier = when (style) {
-        PlayerStylePreset.MinimalCinema -> Modifier
-        PlayerStylePreset.OledPure -> Modifier
-            .clip(RoundedCornerShape(32.dp))
-            .background(Color.Black.copy(alpha = 0.88f))
-            .border(1.dp, primaryColor.copy(alpha = 0.50f), RoundedCornerShape(32.dp))
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-        PlayerStylePreset.CyberpunkHud -> Modifier
-            .clip(CutCornerShape(14.dp))
-            .background(Color(0xFF090D16).copy(alpha = 0.82f))
-            .border(1.4.dp, Brush.linearGradient(listOf(primaryColor, secondaryColor)), CutCornerShape(14.dp))
-            .padding(horizontal = 18.dp, vertical = 10.dp)
-        PlayerStylePreset.Y2KPop -> Modifier
-            .clip(RoundedCornerShape(26.dp))
-            .background(Color(0xFF101826).copy(alpha = 0.78f))
-            .border(2.dp, Color.White.copy(alpha = 0.45f), RoundedCornerShape(26.dp))
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-        PlayerStylePreset.VinylLoFi -> Modifier
-            .clip(RoundedCornerShape(40.dp))
-            .background(Color(0xFF1A1410).copy(alpha = 0.78f))
-            .border(1.2.dp, primaryColor.copy(alpha = 0.60f), RoundedCornerShape(40.dp))
-            .padding(horizontal = 18.dp, vertical = 12.dp)
-        PlayerStylePreset.CozyRetro -> Modifier
-            .clip(RoundedCornerShape(28.dp))
-            .background(Color(0xFF1E1612).copy(alpha = 0.72f))
-            .border(1.2.dp, primaryColor.copy(alpha = 0.55f), RoundedCornerShape(28.dp))
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-        PlayerStylePreset.MatchaZen -> Modifier
-            .clip(RoundedCornerShape(32.dp))
-            .background(Color(0xFF111C16).copy(alpha = 0.72f))
-            .border(1.dp, primaryColor.copy(alpha = 0.48f), RoundedCornerShape(32.dp))
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-        else -> Modifier
-            .selectiveGlassSurface(
-                backdrop = backdrop,
-                role = GlassRole.Player,
-                shape = RoundedCornerShape(36.dp),
-                useNeonBorder = true,
-            )
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-    }
-
-    Row(
-        modifier = modifier.then(capsuleModifier),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        CuteIconTile(
-            icon = Icons.Rounded.SkipPrevious,
-            contentDescription = "Previous",
-            shape = buttonShape,
-            accent = primaryColor,
-            size = 42.dp,
-            onClick = onPrevious,
-        )
-
-        val playBtnShape = when (style) {
-            PlayerStylePreset.KawaiiGlass -> RoundedCornerShape(20.dp)
-            PlayerStylePreset.CyberpunkHud -> CutCornerShape(12.dp)
-            PlayerStylePreset.Y2KPop -> RoundedCornerShape(18.dp)
-            else -> CircleShape
-        }
-
-        // Vinyl / Y2K outer ring accent
-        val ringMod = if (style == PlayerStylePreset.VinylLoFi || style == PlayerStylePreset.Y2KPop) {
-            Modifier
-                .border(2.5.dp, Color.White.copy(alpha = 0.42f), playBtnShape)
-                .padding(3.dp)
-        } else {
-            Modifier
-        }
-
-        Box(
-            modifier = Modifier
-                .then(ringMod)
-                .size(56.dp)
-                .clip(playBtnShape)
-                .background(accentGradient)
-                .border(1.2.dp, Color.White.copy(alpha = 0.35f), playBtnShape)
-                .liquidPressable(
-                    pressedScale = if (CutePlayerPreferences.bouncyAnimations) 0.86f else 0.94f,
-                    haptic = true,
-                    onClick = onTogglePlayPause,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            AnimatedContent(
-                targetState = isPlaying,
-                label = "cutePlayPause",
-            ) { playing ->
-                Icon(
-                    imageVector = if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                    contentDescription = if (playing) "Pause" else "Play",
-                    tint = Color.White,
-                    modifier = Modifier.size(30.dp),
-                )
-            }
-        }
-
-        CuteIconTile(
-            icon = Icons.Rounded.SkipNext,
-            contentDescription = "Next",
-            shape = buttonShape,
-            accent = primaryColor,
-            size = 42.dp,
-            onClick = onNext,
-        )
-    }
-}
-
-/**
- * Adaptive Seekbar supporting 5 styles:
- * Wavy Cute, Neon Pill, Slim Cinema, Segmented Ticks, and Dotted Candy.
- */
 @Composable
 fun CuteAdaptiveSeekbar(
     seekbarStyle: PlayerSeekbarStyle,

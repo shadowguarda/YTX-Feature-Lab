@@ -52,9 +52,9 @@ enum class PlayerEngineMode(val title: String, val tagline: String, val descript
     ),
     Style(
         title = "YTX Style",
-        tagline = "Cute, modern, 10 looks",
-        description = "Restyled controls with 10 looks (Kawaii Glass, Cyberpunk HUD, OLED Pure and more), " +
-            "5 seekbar styles and 4 button shapes. Same gestures, speed, quality and captions.",
+        tagline = "Simple, modern, 10 looks",
+        description = "One clean layout: back, title, big play button and a single seek row. Pick from 10 colour looks " +
+            "(Kawaii Glass, OLED Pure, Minimal Cinema and more), 5 seekbar styles and 4 button shapes.",
     ),
 }
 
