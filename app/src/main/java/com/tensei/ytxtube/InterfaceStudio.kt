@@ -261,9 +261,9 @@ private fun HomeTab() {
     YtxNote(active?.blurb ?: "Custom layout.")
     SubLabel("Video cards")
     ChipChoice(FeedCardStyle.entries, UiUpgrades.homeCardStyle, { it.label }) { UiUpgrades.updateHomeCardStyle(it) }
-    SubLabel("Shelves")
+    SubLabel("Shelves · hold and drag to reorder")
     UiUpgrades.homeShelves.forEach { item ->
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().reorderOnLongPress { UiUpgrades.moveShelf(item.name, it) }, verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(HomeLayoutLogic.label(item.name), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 Text(HomeLayoutLogic.blurb(item.name), fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -281,9 +281,9 @@ private fun NavigationTab() {
     ChipChoice(NavIndicatorStyle.entries, LiquidGlassStudio.navIndicatorStyle, { it.label }) { LiquidGlassStudio.updateGlowAndStyle(navStyle = it) }
     SubLabel("Labels")
     ChipChoice(DockLabelMode.entries, UiUpgrades.dockLabelMode, { it.label }) { UiUpgrades.updateDockLabelMode(it) }
-    SubLabel("Tabs")
+    SubLabel("Tabs · hold and drag to reorder")
     UiUpgrades.currentDock().forEach { item ->
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().reorderOnLongPress { UiUpgrades.moveDockTab(item.name, it) }, verticalAlignment = Alignment.CenterVertically) {
             Text(item.name, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             TextButton(onClick = { UiUpgrades.moveDockTab(item.name, -1) }) { Text("Left") }
             TextButton(onClick = { UiUpgrades.moveDockTab(item.name, 1) }) { Text("Right") }
