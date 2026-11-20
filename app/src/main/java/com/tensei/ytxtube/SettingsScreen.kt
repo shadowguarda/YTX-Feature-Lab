@@ -814,6 +814,7 @@ private fun AppearanceThemeContent(context: Context) {
         var showGlassStudio by remember { mutableStateOf(false) }
         var showIslandSettings by remember { mutableStateOf(false) }
         var showPersonalization by remember { mutableStateOf(false) }
+        var showInterfaceStudio by remember { mutableStateOf(false) }
         var showAccentSheet by remember { mutableStateOf(false) }
         var showPlayerLayout by remember { mutableStateOf(false) }
         SettingsRow(
@@ -846,6 +847,13 @@ private fun AppearanceThemeContent(context: Context) {
             subtitle = "The control panel from the slider icon at the top of every screen",
             onClick = { UiUpgrades.quickPanelOpen = true },
         )
+        SettingsRow(
+            icon = Icons.Rounded.Tune,
+            title = "Interface Studio",
+            subtitle = "Live preview, glass, player, home, navigation, animation, presets, profiles and JSON",
+            onClick = { showInterfaceStudio = true },
+        )
+        if (showInterfaceStudio) InterfaceStudioSheet(onDismiss = { showInterfaceStudio = false })
         SettingsRow(
             icon = Icons.Rounded.Tune,
             title = "Video player",

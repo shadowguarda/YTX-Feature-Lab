@@ -325,6 +325,11 @@ object UiUpgrades {
         prefs?.edit()?.putString("home_shelves", OrderedLayoutLogic.serialize(list))?.apply()
     }
 
+    /** Applies a saved shelf or dock order (the format [OrderedLayoutLogic.serialize] writes). */
+    fun applyShelvesRaw(raw: String) = saveShelves(OrderedLayoutLogic.deserialize(raw, HomeLayoutLogic.ALL))
+    fun applyDockRaw(raw: String) =
+        saveDock(OrderedLayoutLogic.deserialize(raw, tabNames(), NavDockLogic.MIN_VISIBLE_TABS, NavDockLogic.LOCKED_TAB))
+
     fun toggleShelf(name: String) = saveShelves(OrderedLayoutLogic.toggle(homeShelves, name))
     fun moveShelf(name: String, delta: Int) = saveShelves(OrderedLayoutLogic.move(homeShelves, name, delta))
 
