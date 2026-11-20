@@ -260,3 +260,17 @@ fun PlayerSwitcherSheet(onDismiss: () -> Unit) {
         PlayerSwitcherContent(backdrop = LocalGlassBackdrop.current)
     }
 }
+
+object YtxMotion {
+    fun <T> bouncySpring(): androidx.compose.animation.core.SpringSpec<T> =
+        androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessMedium)
+
+    fun <T> snappySpring(): androidx.compose.animation.core.SpringSpec<T> =
+        androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioNoBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessMedium)
+}
+
+/** A selectable chip; the backdrop is accepted for the Style player's call sites. */
+@Composable
+fun GlassPillChip(label: String, selected: Boolean, onClick: () -> Unit, @Suppress("UNUSED_PARAMETER") backdrop: Backdrop? = null) {
+    YtxChip(label = label, selected = selected, onClick = onClick)
+}
