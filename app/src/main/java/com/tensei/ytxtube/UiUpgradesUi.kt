@@ -22,6 +22,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -313,6 +314,28 @@ private fun QuickTileView(tile: QuickTile, modifier: Modifier = Modifier) {
 // Layout sheet: dock tabs and home shelves
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * Long-press a row and drag vertically to move it by one or more positions.
+ * The explicit Up/Down buttons remain available as an accessible alternative.
+ */
+fun Modifier.reorderOnLongPress(onMove: (Int) -> Unit): Modifier {
+    val thresholdPx = with(LocalDensity.current) { 44.dp.toPx() }
+    return pointerInput(onMove, thresholdPx) {
+        var totalY = 0f
+        detectDragGesturesAfterLongPress(
+            onDragStart = { totalY = 0f },
+            onDragEnd = {
+                val steps = (totalY / thresholdPx).toInt().coerceIn(-8, 8)
+                if (steps != 0) onMove(steps)
+            },
+            onDragCancel = { totalY = 0f },
+        ) { change, dragAmount ->
+            totalY += dragAmount.y
+            change.consume()
+        }
+    }
+}
+
 @Composable
 private fun LayoutRow(
     title: String,
@@ -326,7 +349,7 @@ private fun LayoutRow(
     onDown: () -> Unit,
 ) {
     val c = MaterialTheme.colorScheme
-    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp).reorderOnLongPress { onMove(it) }, verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
             if (subtitle != null) Text(subtitle, fontSize = 11.5.sp, color = c.onSurfaceVariant)
@@ -355,7 +378,7 @@ fun LayoutCustomizeSheet(onDismiss: () -> Unit) {
                 TextButton(onClick = onDismiss) { Text("Done") }
             }
             YtxSectionLabel("Bottom dock")
-            YtxNote("Show or hide tabs and change their order. Home always stays, and at least two tabs remain.")
+            YtxNote("Show or hide tabs and change their order. Long-press a row and drag it; Up/Down buttons are also available. Home always stays, and at least two tabs remain.")
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DockLabelMode.entries.forEach { m ->
                     YtxChip(label = m.label, selected = UiUpgrades.dockLabelMode == m) { UiUpgrades.updateDockLabelMode(m) }
@@ -397,7 +420,7 @@ fun LayoutCustomizeSheet(onDismiss: () -> Unit) {
                 }
             }
             YtxSectionLabel("Home shelves")
-            YtxNote("Rows shown above your home feed. A shelf with nothing to show stays out of the way.")
+            YtxNote("Rows shown above your home feed. Long-press a row and drag it to reorder. A shelf with nothing to show stays out of the way.")
             shelves.forEachIndexed { i, item ->
                 LayoutRow(
                     title = HomeLayoutLogic.label(item.name),
