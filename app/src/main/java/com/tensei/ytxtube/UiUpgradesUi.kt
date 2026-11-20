@@ -347,9 +347,10 @@ private fun LayoutRow(
     onToggle: () -> Unit,
     onUp: () -> Unit,
     onDown: () -> Unit,
+    onMove: (Int) -> Unit,
 ) {
     val c = MaterialTheme.colorScheme
-    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp).reorderOnLongPress { onMove(it) }, verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp).reorderOnLongPress(onMove), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
             if (subtitle != null) Text(subtitle, fontSize = 11.5.sp, color = c.onSurfaceVariant)
@@ -397,6 +398,7 @@ fun LayoutCustomizeSheet(onDismiss: () -> Unit) {
                     onToggle = { UiUpgrades.toggleDockTab(item.name) },
                     onUp = { UiUpgrades.moveDockTab(item.name, -1) },
                     onDown = { UiUpgrades.moveDockTab(item.name, 1) },
+                    onMove = { UiUpgrades.moveDockTab(item.name, it) },
                 )
             }
             YtxSectionLabel("Dynamic Island")
@@ -432,6 +434,7 @@ fun LayoutCustomizeSheet(onDismiss: () -> Unit) {
                     onToggle = { UiUpgrades.toggleShelf(item.name) },
                     onUp = { UiUpgrades.moveShelf(item.name, -1) },
                     onDown = { UiUpgrades.moveShelf(item.name, 1) },
+                    onMove = { UiUpgrades.moveShelf(item.name, it) },
                 )
             }
             Spacer(Modifier.height(10.dp))
