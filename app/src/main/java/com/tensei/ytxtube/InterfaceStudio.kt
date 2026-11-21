@@ -195,6 +195,7 @@ private fun ComponentsTab() {
     }
     YtxSliderRow("Border width", LiquidGlassStudio.borderWidthDp, 0.5f..3f, 4, String.format(java.util.Locale.US, "%.1f dp", LiquidGlassStudio.borderWidthDp)) { LiquidGlassStudio.updateDepthAndBorders(borderW = it) }
     YtxSwitchRow("Neon border", "Glow border on the mini player, sheets and the preview", LiquidGlassStudio.neonBorderEnabled) { LiquidGlassStudio.updateDepthAndBorders(neonBorder = it) }
+    YtxSwitchRow("In-app banners", "Slide-in notices when a download finishes or fails", Banners.enabled) { Banners.updateEnabled(it) }
     SubLabel("Colours")
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         OutlinedTextField(accent, { accent = it }, label = { Text("Accent HEX") }, singleLine = true, modifier = Modifier.weight(1f))
@@ -359,6 +360,7 @@ private fun JsonTab() {
         cm.setPrimaryClip(android.content.ClipData.newPlainText("YTX interface profile", InterfaceProfileLogic.toJson(InterfaceProfiles.capture("My interface"))))
         msg = "Copied the current interface as JSON."
     }) { Text("Copy current interface JSON") }
+    OutlinedButton(onClick = { Banners.post(BannerKind.Info, "Banner preview", "This is how in-app notices look.") }) { Text("Preview a banner") }
     SubLabel("Import")
     OutlinedTextField(text, { text = it }, label = { Text("Paste an interface profile") }, minLines = 3, maxLines = 6, modifier = Modifier.fillMaxWidth())
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

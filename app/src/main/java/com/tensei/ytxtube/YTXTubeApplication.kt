@@ -56,6 +56,7 @@ class YTXTubeApplication : Application(), ImageLoaderFactory {
         PlayerEngine.init(this)
         CutePlayerPreferences.init(this)
         InterfaceProfiles.init(this)
+        Banners.init(this)
         WatchPlanManager.init(this)
         WatchLog.init(this)
         FocusGuard.init(this)

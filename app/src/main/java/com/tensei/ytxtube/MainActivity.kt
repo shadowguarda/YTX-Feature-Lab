@@ -1004,6 +1004,7 @@ fun YtxTubeApp() {
         if (UiUpgrades.layoutSheetOpen) LayoutCustomizeSheet(onDismiss = { UiUpgrades.layoutSheetOpen = false })
         if (PlayerEngine.switcherOpen) PlayerSwitcherSheet(onDismiss = { PlayerEngine.switcherOpen = false })
 
+        BannerHost(onOpenDownloads = { tab = Tab.Downloads }, modifier = Modifier.align(Alignment.TopCenter))
         UpdateOverlay(updateState, pageBackdrop)
         }
     }
