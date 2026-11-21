@@ -3,6 +3,15 @@ package com.tensei.ytxtube
 import android.os.Build
 import android.view.WindowManager
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -70,6 +79,7 @@ fun FloatingSheet(
 ) {
     var shown by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val drag = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
     val k = LiquidGlassStudio.animationPreset.durationMultiplier
     val enterMs = PersonalizationLogic.motionMs(320, k)
     val exitMs = PersonalizationLogic.motionMs(200, k)
@@ -115,6 +125,7 @@ fun FloatingSheet(
             ) {
                 Surface(
                     modifier = modifier
+                        .offset { IntOffset(drag.value.x.roundToInt(), drag.value.y.roundToInt()) }
                         .fillMaxWidth()
                         .heightIn(max = maxHeight)
                         .studioNeonBorder(panelShape)
@@ -126,7 +137,28 @@ fun FloatingSheet(
                     border = BorderStroke(1.dp, c.outlineVariant.copy(alpha = 0.5f)),
                 ) {
                     Column(Modifier.fillMaxWidth()) {
-                        Box(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
+                        // Grab area: drag the panel around; pull it down far enough (or fling) to close it.
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .pointerInput(Unit) {
+                                    val closeAt = 120.dp.toPx()
+                                    detectDragGestures(
+                                        onDrag = { change, amount ->
+                                            change.consume()
+                                            val next = drag.value + Offset(amount.x, amount.y)
+                                            scope.launch { drag.snapTo(Offset(next.x.coerceIn(-90f, 90f), next.y.coerceAtLeast(-60f))) }
+                                        },
+                                        onDragEnd = {
+                                            if (drag.value.y > closeAt) close()
+                                            else scope.launch { drag.animateTo(Offset.Zero, spring(stiffness = 500f)) }
+                                        },
+                                        onDragCancel = { scope.launch { drag.animateTo(Offset.Zero, spring(stiffness = 500f)) } },
+                                    )
+                                }
+                                .padding(top = 12.dp, bottom = 10.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
                             Box(Modifier.width(36.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(c.onSurfaceVariant.copy(alpha = 0.35f)))
                         }
                         content()
