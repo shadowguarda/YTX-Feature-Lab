@@ -195,6 +195,11 @@ private fun ComponentsTab() {
     }
     YtxSliderRow("Border width", LiquidGlassStudio.borderWidthDp, 0.5f..3f, 4, String.format(java.util.Locale.US, "%.1f dp", LiquidGlassStudio.borderWidthDp)) { LiquidGlassStudio.updateDepthAndBorders(borderW = it) }
     YtxSwitchRow("Neon border", "Glow border on the mini player, sheets and the preview", LiquidGlassStudio.neonBorderEnabled) { LiquidGlassStudio.updateDepthAndBorders(neonBorder = it) }
+    SubLabel("Floating panel size")
+    YtxSliderRow("Panel width", PanelPrefs.widthFraction, PanelSizeLogic.MIN_W..PanelSizeLogic.MAX_W, 18, "${(PanelPrefs.widthFraction * 100).toInt()}%") { PanelPrefs.updateSize(it, PanelPrefs.heightFraction) }
+    YtxSliderRow("Panel height", PanelPrefs.heightFraction, PanelSizeLogic.MIN_H..PanelSizeLogic.MAX_H, 18, "${(PanelPrefs.heightFraction * 100).toInt()}%") { PanelPrefs.updateSize(PanelPrefs.widthFraction, it) }
+    YtxNote("You can also drag the corner icon at the top right of any panel, or tap it to cycle small, medium and large.")
+    OutlinedButton(onClick = { PanelPrefs.reset() }) { Text("Reset panel size") }
     YtxSwitchRow("In-app banners", "Slide-in notices when a download finishes or fails", Banners.enabled) { Banners.updateEnabled(it) }
     SubLabel("Colours")
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {

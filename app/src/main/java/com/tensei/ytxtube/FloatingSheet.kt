@@ -3,6 +3,12 @@ package com.tensei.ytxtube
 import android.os.Build
 import android.view.WindowManager
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.OpenInFull
+import androidx.compose.material3.Icon
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.spring
@@ -59,6 +65,58 @@ import androidx.compose.ui.window.DialogWindowProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/** Size rules for the floating panels: fractions of the screen, clamped, with three quick presets. */
+object PanelSizeLogic {
+    const val MIN_W = 0.62f
+    const val MAX_W = 1f
+    const val MIN_H = 0.35f
+    const val MAX_H = 0.92f
+    const val DEFAULT_W = 1f
+    const val DEFAULT_H = 0.82f
+
+    /** Small, medium and large, as (width, height) fractions. */
+    val PRESETS = listOf(0.78f to 0.5f, 0.92f to 0.7f, 1f to 0.9f)
+
+    fun clampW(w: Float) = w.coerceIn(MIN_W, MAX_W)
+    fun clampH(h: Float) = h.coerceIn(MIN_H, MAX_H)
+
+    /** Dragging the top-right grip: right grows the width (both sides, as the panel is centred), up grows the height. */
+    fun resize(w: Float, h: Float, dxPx: Float, dyPx: Float, screenWPx: Float, screenHPx: Float): Pair<Float, Float> {
+        if (screenWPx <= 0f || screenHPx <= 0f) return w to h
+        return clampW(w + 2f * dxPx / screenWPx) to clampH(h - dyPx / screenHPx)
+    }
+
+    /** The preset after the one closest to the current size. */
+    fun nextPreset(w: Float, h: Float): Pair<Float, Float> {
+        val nearest = PRESETS.indices.minByOrNull { i -> Math.abs(PRESETS[i].first - w) + Math.abs(PRESETS[i].second - h) } ?: 0
+        return PRESETS[(nearest + 1) % PRESETS.size]
+    }
+}
+
+object PanelPrefs {
+    private var prefs: android.content.SharedPreferences? = null
+
+    var widthFraction by mutableStateOf(PanelSizeLogic.DEFAULT_W)
+        private set
+    var heightFraction by mutableStateOf(PanelSizeLogic.DEFAULT_H)
+        private set
+
+    fun init(context: android.content.Context) {
+        val p = context.applicationContext.getSharedPreferences("panel_size", android.content.Context.MODE_PRIVATE)
+        prefs = p
+        widthFraction = PanelSizeLogic.clampW(p.getFloat("w", PanelSizeLogic.DEFAULT_W))
+        heightFraction = PanelSizeLogic.clampH(p.getFloat("h", PanelSizeLogic.DEFAULT_H))
+    }
+
+    fun updateSize(w: Float, h: Float, save: Boolean = true) {
+        widthFraction = PanelSizeLogic.clampW(w)
+        heightFraction = PanelSizeLogic.clampH(h)
+        if (save) prefs?.edit()?.putFloat("w", widthFraction)?.putFloat("h", heightFraction)?.apply()
+    }
+
+    fun reset() = updateSize(PanelSizeLogic.DEFAULT_W, PanelSizeLogic.DEFAULT_H)
+}
+
 /**
  * A settings panel that floats above the app with a margin on every side instead of sitting flush
  * to the bottom edge. The app behind it is dimmed and, on Android 12+, blurred. It opens with a
@@ -108,7 +166,10 @@ fun FloatingSheet(
         val c = MaterialTheme.colorScheme
         val corner = PersonalizationLogic.sheetCorner(LiquidGlassStudio.sheetCornerRadiusDp).dp
         val panelShape = RoundedCornerShape(corner)
-        val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.82f).dp
+        val screenHdp = LocalConfiguration.current.screenHeightDp
+        val screenWdp = LocalConfiguration.current.screenWidthDp
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val maxHeight = (screenHdp * PanelPrefs.heightFraction).dp
         Box(
             Modifier
                 .fillMaxSize()
@@ -126,7 +187,7 @@ fun FloatingSheet(
                 Surface(
                     modifier = modifier
                         .offset { IntOffset(drag.value.x.roundToInt(), drag.value.y.roundToInt()) }
-                        .fillMaxWidth()
+                        .fillMaxWidth(PanelPrefs.widthFraction)
                         .heightIn(max = maxHeight)
                         .studioNeonBorder(panelShape)
                         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {}),
@@ -160,6 +221,36 @@ fun FloatingSheet(
                             contentAlignment = Alignment.Center,
                         ) {
                             Box(Modifier.width(36.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(c.onSurfaceVariant.copy(alpha = 0.35f)))
+                            // Resize grip: drag to change the panel's width and height, tap to cycle small / medium / large.
+                            Box(
+                                Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .padding(end = 10.dp)
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(onTap = {
+                                            val (w, h) = PanelSizeLogic.nextPreset(PanelPrefs.widthFraction, PanelPrefs.heightFraction)
+                                            PanelPrefs.updateSize(w, h)
+                                        })
+                                    }
+                                    .pointerInput(Unit) {
+                                        detectDragGestures(
+                                            onDrag = { change, amount ->
+                                                change.consume()
+                                                val (w, h) = PanelSizeLogic.resize(
+                                                    PanelPrefs.widthFraction, PanelPrefs.heightFraction, amount.x, amount.y,
+                                                    screenWdp * density.density, screenHdp * density.density,
+                                                )
+                                                PanelPrefs.updateSize(w, h, save = false)
+                                            },
+                                            onDragEnd = { PanelPrefs.updateSize(PanelPrefs.widthFraction, PanelPrefs.heightFraction) },
+                                        )
+                                    },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(Icons.Rounded.OpenInFull, "Resize panel", tint = c.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                            }
                         }
                         content()
                     }
