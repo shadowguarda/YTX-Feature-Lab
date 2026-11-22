@@ -619,6 +619,7 @@ fun VideoContent(
                     onToggleCaptions = { touched(); state.sheet = PlayerSheet.Subtitles },
                     onOpenCustomizer = { touched(); PlayerEngine.switcherOpen = true },
                     externalControlsVisible = controlsVisible && interactive,
+                    chapters = state.details?.chapters.orEmpty(),
                 )
             }
         } else {

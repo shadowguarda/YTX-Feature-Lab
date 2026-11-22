@@ -67,6 +67,10 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -363,6 +367,7 @@ fun CuteModernVideoPlayerOverlay(
     modifier: Modifier = Modifier,
     /** When set, the host owns tap/double-tap handling and decides when the controls show. */
     externalControlsVisible: Boolean? = null,
+    chapters: List<Chapter> = emptyList(),
 ) {
     val style = CutePlayerPreferences.style
     val primaryColor = YtxNeonPalette.parseHex(style.primaryHex, YtxNeonPalette.VioletCore)
@@ -476,8 +481,9 @@ fun CuteModernVideoPlayerOverlay(
                     CuteIconTile(Icons.Rounded.KeyboardArrowDown, "Minimize player", buttonShape, primaryColor, onCollapse, size = 34.dp)
                     Column(Modifier.weight(1f)) {
                         Text(title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        if (channelName.isNotBlank() && !compact) {
-                            Text(channelName, color = Color.White.copy(alpha = 0.72f), fontSize = 11.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        val chapterNow = chapters.takeIf { it.size >= 2 }?.at(positionMs)?.title
+                        if ((chapterNow != null || channelName.isNotBlank()) && !compact) {
+                            Text(chapterNow ?: channelName, color = Color.White.copy(alpha = 0.72f), fontSize = 11.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                     if (CutePlayerPreferences.showCaptionsButton) {
@@ -550,6 +556,7 @@ fun CuteModernVideoPlayerOverlay(
                             secondaryColor = secondaryColor,
                             onSeekTo = onSeekTo,
                             modifier = Modifier.weight(1f),
+                            chapters = chapters,
                         )
                         Text(formatCuteTime(durationMs), color = Color.White.copy(alpha = 0.78f), fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold)
                         CuteIconTile(
@@ -575,8 +582,13 @@ fun CuteAdaptiveSeekbar(
     secondaryColor: Color,
     onSeekTo: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    chapters: List<Chapter> = emptyList(),
 ) {
     var scrubbing by remember { mutableStateOf(false) }
+    var widthPx by remember { mutableIntStateOf(0) }
+    var lastScrubChapter by remember { mutableIntStateOf(-1) }
+    val scrubHaptics = LocalHapticFeedback.current
+    val hasChapters = chapters.size >= 2
     var scrubFraction by remember { mutableFloatStateOf(0f) }
 
     val actualFraction = if (durationMs > 0L) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
@@ -608,6 +620,7 @@ fun CuteAdaptiveSeekbar(
         modifier = modifier
             .fillMaxWidth()
             .height(28.dp)
+            .onSizeChanged { widthPx = it.width }
             .pointerInput(durationMs) {
                 detectTapGestures { offset ->
                     if (durationMs > 0L && size.width > 0) {
@@ -616,7 +629,7 @@ fun CuteAdaptiveSeekbar(
                     }
                 }
             }
-            .pointerInput(durationMs) {
+            .pointerInput(durationMs, chapters) {
                 detectHorizontalDragGestures(
                     onDragStart = { offset ->
                         if (size.width > 0) {
@@ -627,13 +640,21 @@ fun CuteAdaptiveSeekbar(
                     onHorizontalDrag = { change, _ ->
                         if (size.width > 0) {
                             scrubFraction = (change.position.x / size.width.toFloat()).coerceIn(0f, 1f)
+                            if (hasChapters && durationMs > 0L) {
+                                val idx = chapters.indexOfLast { it.startMs <= (scrubFraction * durationMs).toLong() }
+                                if (idx != lastScrubChapter) {
+                                    if (lastScrubChapter != -1) scrubHaptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    lastScrubChapter = idx
+                                }
+                            }
                         }
                     },
                     onDragEnd = {
                         if (durationMs > 0L) onSeekTo((scrubFraction * durationMs).toLong())
                         scrubbing = false
+                        lastScrubChapter = -1
                     },
-                    onDragCancel = { scrubbing = false },
+                    onDragCancel = { scrubbing = false; lastScrubChapter = -1 },
                 )
             },
         contentAlignment = Alignment.CenterStart,
@@ -758,6 +779,43 @@ fun CuteAdaptiveSeekbar(
                             .fillMaxHeight()
                             .background(Brush.horizontalGradient(listOf(primaryColor, secondaryColor))),
                     )
+                }
+            }
+        }
+
+        if (hasChapters && durationMs > 0L) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val midY = size.height / 2f
+                val half = trackHeight.toPx() / 2f + 1.5f
+                chapters.forEach { ch ->
+                    if (ch.startMs > 0L && ch.startMs < durationMs) {
+                        val x = size.width * (ch.startMs.toFloat() / durationMs)
+                        drawLine(Color.Black.copy(alpha = 0.6f), Offset(x, midY - half), Offset(x, midY + half), strokeWidth = 2.dp.toPx())
+                    }
+                }
+            }
+        }
+
+        if (scrubbing && durationMs > 0L && widthPx > 0) {
+            val ms = (scrubFraction * durationMs).toLong()
+            val chapterTitle = if (hasChapters) chapters.at(ms)?.title else null
+            val bubbleW = if (chapterTitle != null) 150.dp else 64.dp
+            val bubbleWpx = with(androidx.compose.ui.platform.LocalDensity.current) { bubbleW.roundToPx() }
+            val x = (widthPx * scrubFraction - bubbleWpx / 2f).coerceIn(0f, (widthPx - bubbleWpx).coerceAtLeast(0).toFloat())
+            val upPx = with(androidx.compose.ui.platform.LocalDensity.current) { 46.dp.roundToPx() }
+            Column(
+                Modifier
+                    .align(Alignment.TopStart)
+                    .offset { IntOffset(x.roundToInt(), -upPx) }
+                    .width(bubbleW)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.Black.copy(alpha = 0.78f))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(formatCuteTime(ms), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                if (chapterTitle != null) {
+                    Text(chapterTitle, color = Color.White.copy(alpha = 0.8f), fontSize = 10.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
